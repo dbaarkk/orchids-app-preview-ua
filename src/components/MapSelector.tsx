@@ -42,64 +42,75 @@ export default function MapSelector({ onSelect, onClose, initialCenter }: MapSel
       importLibrary('marker'),
       importLibrary('places')
     ])
-      .then(() => {
+      .then(async ([mapsLib, markerLib, placesLib]) => {
         clearTimeout(timeout);
         if (!mapRef.current) return;
 
-        const center = initialCenter || { lat: 21.2514, lng: 81.6296 };
+        try {
+          const { Map } = mapsLib as google.maps.MapsLibrary;
+          // Note: Legacy Marker is still available on the global google.maps or can be found in markerLib
+          // but for compatibility we can try to use the one from markerLib if available or fallback
+          const MarkerClass = (markerLib as any).Marker || google.maps.Marker;
+          const { Autocomplete } = placesLib as google.maps.PlacesLibrary;
 
-        const map = new google.maps.Map(mapRef.current, {
-          center,
-          zoom: 15,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: false,
-          restriction: {
-            latLngBounds: RAIPUR_BOUNDS,
-            strictBounds: true,
-          },
-        });
+          const center = initialCenter || { lat: 21.2514, lng: 81.6296 };
 
-        const marker = new google.maps.Marker({
-          position: center,
-          map,
-          draggable: true,
-        });
-
-        setSelected(center);
-
-        map.addListener('click', (e: google.maps.MapMouseEvent) => {
-          const coords = e.latLng?.toJSON();
-          if (!coords) return;
-          marker.setPosition(coords);
-          setSelected(coords);
-        });
-
-        marker.addListener('dragend', () => {
-          const coords = marker.getPosition()?.toJSON();
-          if (coords) setSelected(coords);
-        });
-
-        // Autocomplete
-        if (searchInputRef.current) {
-          const autocomplete = new google.maps.places.Autocomplete(searchInputRef.current, {
-            componentRestrictions: { country: 'in' },
-            fields: ['formatted_address', 'geometry', 'name'],
-            types: ['geocode', 'establishment'],
-            bounds: RAIPUR_BOUNDS
+          const map = new Map(mapRef.current, {
+            center,
+            zoom: 15,
+            mapTypeControl: false,
+            streetViewControl: false,
+            fullscreenControl: false,
+            restriction: {
+              latLngBounds: RAIPUR_BOUNDS,
+              strictBounds: true,
+            },
           });
 
-          autocomplete.addListener('place_changed', () => {
-            const place = autocomplete.getPlace();
-            if (!place.geometry || !place.geometry.location) return;
-
-            const newCoords = place.geometry.location.toJSON();
-            setSelected(newCoords);
-            map.setCenter(newCoords);
-            map.setZoom(17);
-            marker.setPosition(newCoords);
-            setSearchQuery(place.formatted_address || place.name || '');
+          const marker = new MarkerClass({
+            position: center,
+            map,
+            draggable: true,
           });
+
+          setSelected(center);
+
+          map.addListener('click', (e: any) => {
+            const coords = e.latLng?.toJSON();
+            if (!coords) return;
+            marker.setPosition(coords);
+            setSelected(coords);
+          });
+
+          marker.addListener('dragend', () => {
+            const coords = marker.getPosition()?.toJSON();
+            if (coords) setSelected(coords);
+          });
+
+          // Autocomplete
+          if (searchInputRef.current) {
+            const autocomplete = new Autocomplete(searchInputRef.current, {
+              componentRestrictions: { country: 'in' },
+              fields: ['formatted_address', 'geometry', 'name'],
+              types: ['geocode', 'establishment'],
+              bounds: RAIPUR_BOUNDS
+            });
+
+            autocomplete.addListener('place_changed', () => {
+              const place = autocomplete.getPlace();
+              if (!place.geometry || !place.geometry.location) return;
+
+              const newCoords = place.geometry.location.toJSON();
+              setSelected(newCoords);
+              map.setCenter(newCoords);
+              map.setZoom(17);
+              marker.setPosition(newCoords);
+              setSearchQuery(place.formatted_address || place.name || '');
+            });
+          }
+        } catch (err) {
+          console.error('Error initializing map details:', err);
+          setMapError('Something went wrong initializing the map. Please try again.');
         }
       })
       .catch((err) => {

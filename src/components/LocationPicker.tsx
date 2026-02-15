@@ -44,86 +44,94 @@ export default function LocationPicker({ onSelect, onClose, initialCoords, initi
       importLibrary('maps'),
       importLibrary('places'),
       importLibrary('marker')
-    ]).then(() => {
+    ]).then(async ([mapsLib, placesLib, markerLib]) => {
       if (!mapRef.current) return;
 
-      const map = new google.maps.Map(mapRef.current, {
-        center: coords,
-        zoom: 15,
-        mapId: 'DEMO_MAP_ID', // Optional but good for newer features
-        disableDefaultUI: false,
-        zoomControl: true,
-        streetViewControl: false,
-        mapTypeControl: false,
-        fullscreenControl: false,
-        restriction: {
-          latLngBounds: RAIPUR_BOUNDS,
-          strictBounds: true,
-        },
-      });
+      try {
+        const { Map } = mapsLib as google.maps.MapsLibrary;
+        const { Autocomplete } = placesLib as google.maps.PlacesLibrary;
+        const MarkerClass = (markerLib as any).Marker || google.maps.Marker;
 
-      mapInstanceRef.current = map;
-
-      const marker = new google.maps.Marker({
-        position: coords,
-        map: map,
-        draggable: true,
-        animation: google.maps.Animation.DROP
-      });
-
-      markerRef.current = marker;
-      setIsMapLoaded(true);
-
-      // Initialize Autocomplete
-      if (searchInputRef.current) {
-        const autocomplete = new google.maps.places.Autocomplete(searchInputRef.current, {
-          componentRestrictions: { country: 'in' },
-          fields: ['formatted_address', 'geometry', 'name'],
-          types: ['geocode', 'establishment'],
-          bounds: RAIPUR_BOUNDS
+        const map = new Map(mapRef.current, {
+          center: coords,
+          zoom: 15,
+          mapId: 'DEMO_MAP_ID', // Optional but good for newer features
+          disableDefaultUI: false,
+          zoomControl: true,
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: false,
+          restriction: {
+            latLngBounds: RAIPUR_BOUNDS,
+            strictBounds: true,
+          },
         });
 
-        autocomplete.bindTo('bounds', map);
-        autocompleteRef.current = autocomplete;
+        mapInstanceRef.current = map;
 
-        autocomplete.addListener('place_changed', () => {
-          const place = autocomplete.getPlace();
-          if (!place.geometry || !place.geometry.location) return;
-
-          const newCoords = {
-            lat: place.geometry.location.lat(),
-            lng: place.geometry.location.lng()
-          };
-
-          setCoords(newCoords);
-          setAddress(place.formatted_address || place.name || '');
-          setSearchQuery(place.formatted_address || place.name || '');
-
-          map.setCenter(newCoords);
-          map.setZoom(17);
-          marker.setPosition(newCoords);
+        const marker = new MarkerClass({
+          position: coords,
+          map: map,
+          draggable: true,
+          animation: (google.maps as any).Animation?.DROP
         });
+
+        markerRef.current = marker;
+        setIsMapLoaded(true);
+
+        // Initialize Autocomplete
+        if (searchInputRef.current) {
+          const autocomplete = new Autocomplete(searchInputRef.current, {
+            componentRestrictions: { country: 'in' },
+            fields: ['formatted_address', 'geometry', 'name'],
+            types: ['geocode', 'establishment'],
+            bounds: RAIPUR_BOUNDS
+          });
+
+          autocomplete.bindTo('bounds', map);
+          autocompleteRef.current = autocomplete;
+
+          autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            if (!place.geometry || !place.geometry.location) return;
+
+            const newCoords = {
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng()
+            };
+
+            setCoords(newCoords);
+            setAddress(place.formatted_address || place.name || '');
+            setSearchQuery(place.formatted_address || place.name || '');
+
+            map.setCenter(newCoords);
+            map.setZoom(17);
+            marker.setPosition(newCoords);
+          });
+        }
+
+        // Marker drag events
+        marker.addListener('dragend', () => {
+          const pos = marker.getPosition();
+          if (pos) {
+            const newCoords = { lat: pos.lat(), lng: pos.lng() };
+            setCoords(newCoords);
+            performReverseGeocode(newCoords);
+          }
+        });
+
+        // Map click events
+        map.addListener('click', (e: any) => {
+          if (e.latLng) {
+            const newCoords = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+            marker.setPosition(newCoords);
+            setCoords(newCoords);
+            performReverseGeocode(newCoords);
+          }
+        });
+      } catch (err) {
+        console.error('Error initializing location picker details:', err);
       }
-
-      // Marker drag events
-      marker.addListener('dragend', () => {
-        const pos = marker.getPosition();
-        if (pos) {
-          const newCoords = { lat: pos.lat(), lng: pos.lng() };
-          setCoords(newCoords);
-          reverseGeocode(newCoords);
-        }
-      });
-
-      // Map click events
-      map.addListener('click', (e: google.maps.MapMouseEvent) => {
-        if (e.latLng) {
-          const newCoords = { lat: e.latLng.lat(), lng: e.latLng.lng() };
-          marker.setPosition(newCoords);
-          setCoords(newCoords);
-          reverseGeocode(newCoords);
-        }
-      });
     }).catch(err => {
       console.error('Google Maps Load Error:', err);
     });
@@ -133,14 +141,17 @@ export default function LocationPicker({ onSelect, onClose, initialCoords, initi
     };
   }, []);
 
-  const reverseGeocode = (c: { lat: number; lng: number }) => {
-    const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ location: c }, (results, status) => {
-      if (status === 'OK' && results && results[0]) {
-        setAddress(results[0].formatted_address);
-        setSearchQuery(results[0].formatted_address);
+  const performReverseGeocode = async (c: { lat: number; lng: number }) => {
+    try {
+      const res = await fetch(`/api/location/reverse-geocode?lat=${c.lat}&lng=${c.lng}`);
+      const data = await res.json();
+      if (data.status === 'OK' && data.results && data.results[0]) {
+        setAddress(data.results[0].formatted_address);
+        setSearchQuery(data.results[0].formatted_address);
       }
-    });
+    } catch (err) {
+      console.error('Reverse geocode failed:', err);
+    }
   };
 
   return (
