@@ -9,7 +9,7 @@ export interface AccurateLocation {
 
 export const getAccurateLocation = async (): Promise<AccurateLocation> => {
   try {
-    // Native mobile (Capacitor)
+    // Native (Android/iOS)
     if (Capacitor.isNativePlatform()) {
       const permissions = await Geolocation.requestPermissions();
 
@@ -58,7 +58,15 @@ export const getAccurateLocation = async (): Promise<AccurateLocation> => {
   }
 };
 
-export const reverseGeocode = async (lat: number, lng: number) => {
+export const reverseGeocode = async (
+  lat: number,
+  lng: number
+): Promise<{
+  line1: string;
+  pincode: string;
+  city: string;
+  state: string;
+}> => {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   if (!apiKey) throw new Error('Google Maps API key missing');
 
@@ -79,7 +87,8 @@ export const reverseGeocode = async (lat: number, lng: number) => {
       };
     }
 
-    const comps = data.results[0].address_components;
+    const result = data.results[0];
+    const comps = result.address_components || [];
 
     let house = '';
     let street = '';
@@ -90,16 +99,27 @@ export const reverseGeocode = async (lat: number, lng: number) => {
 
     comps.forEach((c: any) => {
       if (c.types.includes('premise') || c.types.includes('subpremise')) house = c.long_name;
-      if (c.types.includes('route')) street = c.long_name;
-      if (c.types.includes('sublocality') || c.types.includes('sublocality_level_1')) area = c.long_name;
-      if (c.types.includes('postal_code')) pincode = c.long_name;
-      if (c.types.includes('locality')) city = c.long_name;
-      if (c.types.includes('administrative_area_level_1')) state = c.long_name;
+      else if (c.types.includes('route')) street = c.long_name;
+      else if (c.types.includes('sublocality') || c.types.includes('sublocality_level_1')) area = c.long_name;
+      else if (c.types.includes('postal_code')) pincode = c.long_name;
+      else if (c.types.includes('locality')) city = c.long_name;
+      else if (c.types.includes('administrative_area_level_1')) state = c.long_name;
     });
 
-    const line1 = [house, street, area].filter(Boolean).join(', ');
+    // Primary line build
+    let line1 = [house, street, area].filter(Boolean).join(', ');
 
-    return { line1, pincode, city, state };
+    // Fallback if components empty → use formatted address
+    if (!line1) {
+      line1 = result.formatted_address || '';
+    }
+
+    return {
+      line1,
+      pincode: pincode || '',
+      city,
+      state,
+    };
   } catch (err) {
     console.error('Reverse geocode error:', err);
     return {
