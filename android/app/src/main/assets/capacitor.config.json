@@ -1,0 +1,18 @@
+{
+	"appId": "com.urbanauto.app",
+	"appName": "Urban Auto",
+	"webDir": "out",
+	"server": {
+		"url": "https://app.theurbanauto.com",
+		"cleartext": true
+	},
+	"plugins": {
+		"PushNotifications": {
+			"presentationOptions": [
+				"badge",
+				"sound",
+				"alert"
+			]
+		}
+	}
+}
