@@ -48,11 +48,15 @@ export default function LocationPicker({ onSelect, onClose, initialCoords, initi
       if (!mapRef.current) return;
 
       try {
-        const { Map } = mapsLib as google.maps.MapsLibrary;
-        const { Autocomplete } = placesLib as google.maps.PlacesLibrary;
-        const MarkerClass = (markerLib as any).Marker || google.maps.Marker;
+        const MapClass = (mapsLib as any).Map;
+        const AutocompleteClass = (placesLib as any).Autocomplete;
+        const MarkerClass = (markerLib as any).Marker || (markerLib as any).AdvancedMarkerElement;
 
-        const map = new Map(mapRef.current, {
+        if (!MapClass || !MarkerClass) {
+          throw new Error('Required Google Maps components failed to load');
+        }
+
+        const map = new MapClass(mapRef.current, {
           center: coords,
           zoom: 15,
           mapId: 'DEMO_MAP_ID', // Optional but good for newer features
@@ -73,15 +77,27 @@ export default function LocationPicker({ onSelect, onClose, initialCoords, initi
           position: coords,
           map: map,
           draggable: true,
-          animation: (google.maps as any).Animation?.DROP
         });
 
         markerRef.current = marker;
         setIsMapLoaded(true);
 
+        const updateMarkerPos = (pos: { lat: number; lng: number }) => {
+          if (marker.setPosition) marker.setPosition(pos);
+          else marker.position = pos;
+        };
+
+        const getMarkerPos = () => {
+          if (marker.getPosition) {
+            const p = marker.getPosition();
+            return { lat: p.lat(), lng: p.lng() };
+          }
+          return marker.position;
+        };
+
         // Initialize Autocomplete
-        if (searchInputRef.current) {
-          const autocomplete = new Autocomplete(searchInputRef.current, {
+        if (searchInputRef.current && AutocompleteClass) {
+          const autocomplete = new AutocompleteClass(searchInputRef.current, {
             componentRestrictions: { country: 'in' },
             fields: ['formatted_address', 'geometry', 'name'],
             types: ['geocode', 'establishment'],
@@ -106,15 +122,14 @@ export default function LocationPicker({ onSelect, onClose, initialCoords, initi
 
             map.setCenter(newCoords);
             map.setZoom(17);
-            marker.setPosition(newCoords);
+            updateMarkerPos(newCoords);
           });
         }
 
         // Marker drag events
         marker.addListener('dragend', () => {
-          const pos = marker.getPosition();
-          if (pos) {
-            const newCoords = { lat: pos.lat(), lng: pos.lng() };
+          const newCoords = getMarkerPos();
+          if (newCoords) {
             setCoords(newCoords);
             performReverseGeocode(newCoords);
           }
@@ -124,7 +139,7 @@ export default function LocationPicker({ onSelect, onClose, initialCoords, initi
         map.addListener('click', (e: any) => {
           if (e.latLng) {
             const newCoords = { lat: e.latLng.lat(), lng: e.latLng.lng() };
-            marker.setPosition(newCoords);
+            updateMarkerPos(newCoords);
             setCoords(newCoords);
             performReverseGeocode(newCoords);
           }
