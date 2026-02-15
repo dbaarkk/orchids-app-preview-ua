@@ -106,18 +106,18 @@ function BookingItem({ booking, onCancel, onReschedule }: {
   const minutesLeft = Math.floor(timeLeft / (1000 * 60));
   const canReschedule = timeLeft > 0 && (booking.status === 'Pending' || booking.status === 'Confirmed') && booking.status !== 'Cancelled';
 
-      const isRescheduleConfirmed = booking.status === 'Confirmed' && booking.rescheduledBy !== null && booking.rescheduledBy !== undefined;
+  const isRescheduleConfirmed = booking.status === 'Confirmed' && booking.rescheduledBy !== null && booking.rescheduledBy !== undefined;
 
-      const getStatusColor = (status: string) => {
-        switch (status) {
-          case 'Pending': return 'bg-yellow-100 text-yellow-700';
-          case 'Confirmed': return 'bg-green-100 text-green-700';
-          case 'Completed': return 'bg-blue-100 text-blue-700';
-          case 'Rescheduled': return 'bg-orange-100 text-orange-700';
-          case 'Cancelled': return 'bg-red-100 text-red-700';
-          default: return 'bg-gray-100 text-gray-700';
-        }
-      };
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Pending': return 'bg-yellow-100 text-yellow-700';
+      case 'Confirmed': return 'bg-green-100 text-green-700';
+      case 'Completed': return 'bg-blue-100 text-blue-700';
+      case 'Rescheduled': return 'bg-orange-100 text-orange-700';
+      case 'Cancelled': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
 
   return (
     <motion.div
@@ -130,9 +130,9 @@ function BookingItem({ booking, onCancel, onReschedule }: {
           <h3 className="font-semibold text-gray-900 line-clamp-1">{booking.serviceName}</h3>
           <p className="text-xs text-gray-500 mt-0.5">{booking.vehicleType}</p>
         </div>
-          <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusColor(booking.status)}`}>
-            {isRescheduleConfirmed ? 'Reschedule Confirmed' : booking.status}
-          </span>
+        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusColor(booking.status)}`}>
+          {isRescheduleConfirmed ? 'Reschedule Confirmed' : booking.status}
+        </span>
       </div>
 
       <div className="space-y-2 text-sm">
@@ -140,20 +140,20 @@ function BookingItem({ booking, onCancel, onReschedule }: {
           <Calendar className="w-4 h-4 text-primary/60" />
           <span className="text-xs">{booking.preferredDateTime}</span>
         </div>
-          <div className="flex items-start gap-2 text-gray-600">
-            <MapPin className="w-4 h-4 text-primary/60 mt-0.5" />
-            <span className="text-xs line-clamp-1">{booking.address}</span>
-          </div>
-          <div className="flex items-center gap-2 mt-1">
-            <IndianRupee className="w-4 h-4 text-primary/60" />
-            <span className="text-xs font-semibold text-gray-900">
-              {(booking.totalAmount && booking.totalAmount > 0) ? `₹${booking.totalAmount.toLocaleString('en-IN')}/-` : 'Get Quote'}
-            </span>
-              <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${booking.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
-                {booking.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
-              </span>
-          </div>
+        <div className="flex items-start gap-2 text-gray-600">
+          <MapPin className="w-4 h-4 text-primary/60 mt-0.5" />
+          <span className="text-xs line-clamp-1">{booking.address}</span>
         </div>
+        <div className="flex items-center gap-2 mt-1">
+          <IndianRupee className="w-4 h-4 text-primary/60" />
+          <span className="text-xs font-semibold text-gray-900">
+            {(booking.totalAmount && booking.totalAmount > 0) ? `₹${booking.totalAmount.toLocaleString('en-IN')}/-` : 'Get Quote'}
+          </span>
+          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase ${booking.paymentStatus === 'paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'}`}>
+            {booking.paymentStatus === 'paid' ? 'Paid' : 'Unpaid'}
+          </span>
+        </div>
+      </div>
 
       {canReschedule && (
         <div className="mt-4 p-3 bg-primary/5 rounded-xl border border-primary/10">
@@ -178,24 +178,22 @@ function BookingItem({ booking, onCancel, onReschedule }: {
         </div>
       )}
 
-      {booking.status === 'Rescheduled' && (
-            <div className="mt-3 p-3 bg-orange-50 rounded-xl border border-orange-200">
-              <p className="text-xs text-orange-700 font-medium">
-                {booking.rescheduledBy === 'admin' 
-                  ? 'Booking rescheduled by the garage' 
-                  : 'Rescheduled successfully'}
-              </p>
-            </div>
-          )}
+      {booking.status === 'Cancelled' && (
+        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl text-center">
+          <p className="text-sm font-semibold text-red-600">
+            Booking Cancelled
+          </p>
+        </div>
+      )}
 
-        {!canReschedule && booking.status === 'Pending' && booking.status !== 'Cancelled' && (
-          <button
-            onClick={() => onCancel(booking.id)}
-            className="mt-4 w-full py-2.5 border border-red-100 text-red-500 rounded-xl text-xs font-bold hover:bg-red-50 transition-colors"
-          >
-            Cancel Booking
-          </button>
-        )}
+      {!canReschedule && booking.status === 'Pending' && (
+        <button
+          onClick={() => onCancel(booking.id)}
+          className="mt-4 w-full py-2.5 border border-red-100 text-red-500 rounded-xl text-xs font-bold hover:bg-red-50 transition-colors"
+        >
+          Cancel Booking
+        </button>
+      )}
     </motion.div>
   );
 }
@@ -219,14 +217,16 @@ export default function BookingsPage() {
   }, [bookings]);
 
   const confirmCancel = async () => {
-    if (cancellingId) {
-      const result = await cancelBooking(cancellingId);
-      if (result.success) {
-        toast.success('Booking cancelled');
-      } else {
-        toast.error('Failed to cancel booking');
-      }
-      setCancellingId(null);
+    if (!cancellingId) return;
+    const id = cancellingId;
+    setCancellingId(null);
+
+    const result = await cancelBooking(id);
+
+    if (result?.success) {
+      toast.success('Booking cancelled');
+    } else {
+      toast.error(result?.error || 'Failed to cancel booking');
     }
   };
 
