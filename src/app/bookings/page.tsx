@@ -104,7 +104,7 @@ function BookingItem({ booking, onCancel, onReschedule }: {
   }, [booking.createdAt]);
 
   const minutesLeft = Math.floor(timeLeft / (1000 * 60));
-  const canReschedule = timeLeft > 0 && (booking.status === 'Pending' || booking.status === 'Confirmed');
+  const canReschedule = timeLeft > 0 && (booking.status === 'Pending' || booking.status === 'Confirmed') && booking.status !== 'Cancelled';
 
       const isRescheduleConfirmed = booking.status === 'Confirmed' && booking.rescheduledBy !== null && booking.rescheduledBy !== undefined;
 
@@ -114,6 +114,7 @@ function BookingItem({ booking, onCancel, onReschedule }: {
           case 'Confirmed': return 'bg-green-100 text-green-700';
           case 'Completed': return 'bg-blue-100 text-blue-700';
           case 'Rescheduled': return 'bg-orange-100 text-orange-700';
+          case 'Cancelled': return 'bg-red-100 text-red-700';
           default: return 'bg-gray-100 text-gray-700';
         }
       };
@@ -187,7 +188,7 @@ function BookingItem({ booking, onCancel, onReschedule }: {
             </div>
           )}
 
-        {!canReschedule && booking.status === 'Pending' && (
+        {!canReschedule && booking.status === 'Pending' && booking.status !== 'Cancelled' && (
           <button
             onClick={() => onCancel(booking.id)}
             className="mt-4 w-full py-2.5 border border-red-100 text-red-500 rounded-xl text-xs font-bold hover:bg-red-50 transition-colors"

@@ -36,7 +36,7 @@ export interface Booking {
   serviceMode?: string;
   address: string;
   notes?: string;
-  status: 'Pending' | 'Confirmed' | 'Completed' | 'Rescheduled';
+  status: 'Pending' | 'Confirmed' | 'Completed' | 'Rescheduled' | 'Cancelled';
     totalAmount?: number;
     rescheduledBy?: 'user' | 'admin' | null;
     paymentStatus?: string;
@@ -506,10 +506,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
   const cancelBooking = useCallback(async (bookingId: string) => {
+    const current = userRef.current;
+    if (!current) return { success: false, error: 'Not logged in' };
+
     try {
-      const { error } = await supabase.from('bookings').delete().eq('id', bookingId);
-      if (error) throw error;
-      setBookings(prev => prev.filter(b => b.id !== bookingId));
+      const response = await fetch('/api/bookings/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bookingId, userId: current.id }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+
+      setBookings(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'Cancelled' } : b));
+      // Refresh user to get updated wallet balance if refund happened
+      fetchProfile(current.id).then(profile => {
+        if (profile) {
+          const updated = mapProfileToUser(profile);
+          setUser(updated);
+          userRef.current = updated;
+        }
+      });
+
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message };

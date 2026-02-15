@@ -189,6 +189,36 @@ export async function POST(request: Request) {
 
     if (action === 'update-booking-status') {
       const { bookingId, status } = body;
+
+      // Refund logic if cancelling
+      if (status === 'Cancelled') {
+        const { data: booking, error: fetchErr } = await adminClient
+          .from('bookings')
+          .select('*')
+          .eq('id', bookingId)
+          .single();
+
+        if (!fetchErr && booking && booking.status !== 'Cancelled') {
+          if (booking.payment_method === 'wallet' && booking.payment_status === 'paid') {
+            const { data: profile } = await adminClient
+              .from('profiles')
+              .select('wallet_balance')
+              .eq('id', booking.user_id)
+              .single();
+
+            const newBalance = (profile?.wallet_balance || 0) + (booking.total_amount || 0);
+            await adminClient.from('profiles').update({ wallet_balance: newBalance }).eq('id', booking.user_id);
+            await adminClient.from('wallet_transactions').insert([{
+              user_id: booking.user_id,
+              amount: booking.total_amount,
+              type: 'credit',
+              description: `Refund for cancelled booking: ${booking.service_name}`,
+              booking_id: booking.id
+            }]);
+          }
+        }
+      }
+
       const { error } = await adminClient.from('bookings').update({ status }).eq('id', bookingId);
       if (error) return NextResponse.json({ error: error.message }, { status: 400 });
       return NextResponse.json({ success: true });
@@ -212,6 +242,24 @@ export async function POST(request: Request) {
         .eq('service_id', serviceId);
       if (error) return NextResponse.json({ error: error.message }, { status: 400 });
       return NextResponse.json({ success: true });
+    }
+
+    if (action === 'send-push-notification') {
+      const { title, content } = body;
+      const { data: tokens, error: tokenErr } = await adminClient
+        .from('device_tokens')
+        .select('token');
+
+      if (tokenErr) return NextResponse.json({ error: tokenErr.message }, { status: 400 });
+
+      const tokenList = tokens?.map(t => t.token).filter(Boolean) || [];
+
+      // Placeholder for FCM sending logic
+      // In a real scenario, you would use firebase-admin or fetch to FCM API
+      // tokens.forEach(token => sendPush(token, title, content));
+      console.log(`Push notification triggered: ${title} - ${content} to ${tokenList.length} devices`);
+
+      return NextResponse.json({ success: true, deviceCount: tokenList.length });
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });

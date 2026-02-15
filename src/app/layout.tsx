@@ -6,6 +6,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import BottomNav from "@/components/BottomNav";
 import { Toaster } from "sonner";
 import { VisualEditsMessenger as VisualEditsMessengerComponent } from "orchids-visual-edits";
+import NotificationPermissionHandler from "@/components/NotificationPermissionHandler";
 
 export const viewport: Viewport = {
   themeColor: "#1e3a8a",
@@ -73,6 +74,7 @@ export default function RootLayout({
           `}
         </Script>
           <AuthProvider>
+            <NotificationPermissionHandler />
             {children}
             <BottomNav />
             <Toaster position="top-center" richColors closeButton />
