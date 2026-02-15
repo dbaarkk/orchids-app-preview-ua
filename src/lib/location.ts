@@ -1,5 +1,6 @@
 import { Geolocation, Position } from '@capacitor/geolocation';
 import { Capacitor } from '@capacitor/core';
+import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 
 export interface AccurateLocation {
   latitude: number;
@@ -67,17 +68,31 @@ export const reverseGeocode = async (
   city: string;
   state: string;
 }> => {
+  if (typeof window === 'undefined') {
+    return {
+      line1: 'Error fetching location',
+      pincode: '',
+      city: 'Raipur',
+      state: 'Chhattisgarh',
+    };
+  }
+
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   if (!apiKey) throw new Error('Google Maps API key missing');
 
   try {
-    const res = await fetch(
-      `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`
-    );
+    setOptions({
+      key: apiKey,
+      v: 'weekly',
+    });
 
-    const data = await res.json();
+    const { Geocoder } = await importLibrary('geocoding') as google.maps.GeocodingLibrary;
+    const geocoder = new Geocoder();
 
-    if (data.status === 'ZERO_RESULTS') {
+    const response = await geocoder.geocode({ location: { lat, lng } });
+    const results = response.results;
+
+    if (!results || results.length === 0) {
       console.warn('Geocode returned ZERO_RESULTS');
       return {
         line1: 'Location not found',
@@ -87,17 +102,7 @@ export const reverseGeocode = async (
       };
     }
 
-    if (data.status !== 'OK' || !data.results?.length) {
-      console.warn('Geocode failed:', data);
-      return {
-        line1: 'Geocoding failed',
-        pincode: '',
-        city: 'Raipur',
-        state: 'Chhattisgarh',
-      };
-    }
-
-    const result = data.results[0];
+    const result = results[0];
     const comps = result.address_components || [];
 
     let house = '';

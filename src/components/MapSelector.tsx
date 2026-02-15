@@ -2,7 +2,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
-import { X, MapPin, Check, Loader2 } from 'lucide-react';
+import { X, MapPin, Check, Loader2, Search } from 'lucide-react';
+
+const RAIPUR_BOUNDS = {
+  north: 21.40,
+  south: 21.10,
+  east: 81.80,
+  west: 81.40,
+};
 
 interface MapSelectorProps {
   onSelect: (lat: number, lng: number) => void;
@@ -12,7 +19,9 @@ interface MapSelectorProps {
 
 export default function MapSelector({ onSelect, onClose, initialCenter }: MapSelectorProps) {
   const mapRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const [selected, setSelected] = useState<{ lat: number; lng: number } | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const [mapError, setMapError] = useState<string | null>(null);
 
@@ -30,7 +39,8 @@ export default function MapSelector({ onSelect, onClose, initialCenter }: MapSel
 
     Promise.all([
       importLibrary('maps'),
-      importLibrary('marker')
+      importLibrary('marker'),
+      importLibrary('places')
     ])
       .then(() => {
         clearTimeout(timeout);
@@ -44,6 +54,10 @@ export default function MapSelector({ onSelect, onClose, initialCenter }: MapSel
           mapTypeControl: false,
           streetViewControl: false,
           fullscreenControl: false,
+          restriction: {
+            latLngBounds: RAIPUR_BOUNDS,
+            strictBounds: true,
+          },
         });
 
         const marker = new google.maps.Marker({
@@ -65,6 +79,28 @@ export default function MapSelector({ onSelect, onClose, initialCenter }: MapSel
           const coords = marker.getPosition()?.toJSON();
           if (coords) setSelected(coords);
         });
+
+        // Autocomplete
+        if (searchInputRef.current) {
+          const autocomplete = new google.maps.places.Autocomplete(searchInputRef.current, {
+            componentRestrictions: { country: 'in' },
+            fields: ['formatted_address', 'geometry', 'name'],
+            types: ['geocode', 'establishment'],
+            bounds: RAIPUR_BOUNDS
+          });
+
+          autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            if (!place.geometry || !place.geometry.location) return;
+
+            const newCoords = place.geometry.location.toJSON();
+            setSelected(newCoords);
+            map.setCenter(newCoords);
+            map.setZoom(17);
+            marker.setPosition(newCoords);
+            setSearchQuery(place.formatted_address || place.name || '');
+          });
+        }
       })
       .catch((err) => {
         clearTimeout(timeout);
@@ -90,6 +126,20 @@ export default function MapSelector({ onSelect, onClose, initialCenter }: MapSel
         >
           <Check className="w-4 h-4" /> Confirm
         </button>
+      </div>
+
+      <div className="p-3 bg-white border-b sticky top-0 z-20">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search address in Raipur..."
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+          />
+        </div>
       </div>
 
       <div ref={mapRef} className="flex-1 bg-gray-50 flex items-center justify-center relative">

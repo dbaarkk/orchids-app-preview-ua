@@ -15,6 +15,12 @@ interface LocationPickerProps {
 
 // Raipur, Chhattisgarh coordinates
 const RAIPUR_CENTER = { lat: 21.2514, lng: 81.6296 };
+const RAIPUR_BOUNDS = {
+  north: 21.40,
+  south: 21.10,
+  east: 81.80,
+  west: 81.40,
+};
 
 export default function LocationPicker({ onSelect, onClose, initialCoords, initialAddress }: LocationPickerProps) {
   const mapRef = useRef<HTMLDivElement>(null);
@@ -49,7 +55,11 @@ export default function LocationPicker({ onSelect, onClose, initialCoords, initi
         zoomControl: true,
         streetViewControl: false,
         mapTypeControl: false,
-        fullscreenControl: false
+        fullscreenControl: false,
+        restriction: {
+          latLngBounds: RAIPUR_BOUNDS,
+          strictBounds: true,
+        },
       });
 
       mapInstanceRef.current = map;
@@ -69,7 +79,8 @@ export default function LocationPicker({ onSelect, onClose, initialCoords, initi
         const autocomplete = new google.maps.places.Autocomplete(searchInputRef.current, {
           componentRestrictions: { country: 'in' },
           fields: ['formatted_address', 'geometry', 'name'],
-          types: ['geocode', 'establishment']
+          types: ['geocode', 'establishment'],
+          bounds: RAIPUR_BOUNDS
         });
 
         autocomplete.bindTo('bounds', map);
