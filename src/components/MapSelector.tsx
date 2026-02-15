@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
-import { X, MapPin, Check } from 'lucide-react';
+import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
+import { X, MapPin, Check, Loader2 } from 'lucide-react';
 
 interface MapSelectorProps {
   onSelect: (lat: number, lng: number) => void;
@@ -14,15 +14,26 @@ export default function MapSelector({ onSelect, onClose, initialCenter }: MapSel
   const mapRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<{ lat: number; lng: number } | null>(null);
 
+  const [mapError, setMapError] = useState<string | null>(null);
+
   useEffect(() => {
-    const loader = new Loader({
-      apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-      version: 'weekly',
+    setOptions({
+      key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+      v: 'weekly',
     });
 
-    loader
-      .load()
+    const timeout = setTimeout(() => {
+      if (!selected && !mapError) {
+        setMapError('Map taking too long to load. Please check your connection.');
+      }
+    }, 10000);
+
+    Promise.all([
+      importLibrary('maps'),
+      importLibrary('marker')
+    ])
       .then(() => {
+        clearTimeout(timeout);
         if (!mapRef.current) return;
 
         const center = initialCenter || { lat: 21.2514, lng: 81.6296 };
@@ -56,8 +67,9 @@ export default function MapSelector({ onSelect, onClose, initialCenter }: MapSel
         });
       })
       .catch((err) => {
+        clearTimeout(timeout);
         console.error('Google Maps failed:', err);
-        alert('Map failed to load. Check API key, billing, and restrictions.');
+        setMapError('Failed to load Google Maps. Please try again later.');
       });
   }, [initialCenter]);
 
@@ -80,7 +92,25 @@ export default function MapSelector({ onSelect, onClose, initialCenter }: MapSel
         </button>
       </div>
 
-      <div ref={mapRef} className="flex-1" />
+      <div ref={mapRef} className="flex-1 bg-gray-50 flex items-center justify-center relative">
+        {mapError && (
+          <div className="absolute inset-0 z-10 bg-white/90 flex flex-col items-center justify-center p-6 text-center">
+            <p className="text-red-500 font-medium mb-4">{mapError}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        {!selected && !mapError && (
+          <div className="flex flex-col items-center gap-2">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm text-gray-500">Loading map...</p>
+          </div>
+        )}
+      </div>
 
       <div className="p-4 border-t text-sm text-gray-600 flex items-center gap-2">
         <MapPin className="w-4 h-4 text-primary" />

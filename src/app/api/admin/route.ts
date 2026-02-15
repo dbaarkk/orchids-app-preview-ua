@@ -229,7 +229,7 @@ export async function POST(request: Request) {
         if (booking) {
           const { data: tokens } = await adminClient.from('device_tokens').select('token').eq('user_id', booking.user_id);
           if (tokens && tokens.length > 0) {
-            const tokenList = tokens.map(t => t.token);
+            const tokenList = tokens.map(t => t.token).filter(Boolean);
             const failedTokens = await sendPushNotification(
               tokenList,
               'Booking Confirmed',

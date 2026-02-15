@@ -77,10 +77,20 @@ export const reverseGeocode = async (
 
     const data = await res.json();
 
+    if (data.status === 'ZERO_RESULTS') {
+      console.warn('Geocode returned ZERO_RESULTS');
+      return {
+        line1: 'Location not found',
+        pincode: '',
+        city: 'Raipur',
+        state: 'Chhattisgarh',
+      };
+    }
+
     if (data.status !== 'OK' || !data.results?.length) {
       console.warn('Geocode failed:', data);
       return {
-        line1: '',
+        line1: 'Geocoding failed',
         pincode: '',
         city: 'Raipur',
         state: 'Chhattisgarh',
@@ -92,25 +102,39 @@ export const reverseGeocode = async (
 
     let house = '';
     let street = '';
-    let area = '';
+    let sublocality = '';
+    let neighborhood = '';
     let pincode = '';
     let city = 'Raipur';
     let state = 'Chhattisgarh';
 
     comps.forEach((c: any) => {
-      if (c.types.includes('premise') || c.types.includes('subpremise')) house = c.long_name;
-      else if (c.types.includes('route')) street = c.long_name;
-      else if (c.types.includes('sublocality') || c.types.includes('sublocality_level_1')) area = c.long_name;
-      else if (c.types.includes('postal_code')) pincode = c.long_name;
-      else if (c.types.includes('locality')) city = c.long_name;
-      else if (c.types.includes('administrative_area_level_1')) state = c.long_name;
+      const types = c.types || [];
+      if (types.includes('premise') || types.includes('subpremise') || types.includes('room') || types.includes('floor')) {
+        house = c.long_name;
+      } else if (types.includes('route') || types.includes('street_address')) {
+        street = c.long_name;
+      } else if (types.includes('sublocality') || types.includes('sublocality_level_1') || types.includes('sublocality_level_2')) {
+        sublocality = c.long_name;
+      } else if (types.includes('neighborhood')) {
+        neighborhood = c.long_name;
+      } else if (types.includes('postal_code')) {
+        pincode = c.long_name;
+      } else if (types.includes('locality')) {
+        city = c.long_name;
+      } else if (types.includes('administrative_area_level_1')) {
+        state = c.long_name;
+      }
     });
+
+    // Fallback area if sublocality is empty
+    const area = sublocality || neighborhood || '';
 
     // Primary line build
     let line1 = [house, street, area].filter(Boolean).join(', ');
 
-    // Fallback if components empty → use formatted address
-    if (!line1) {
+    // Fallback: If house and street both missing OR if line1 is still empty, use formatted_address
+    if ((!house && !street) || !line1) {
       line1 = result.formatted_address || '';
     }
 
@@ -123,7 +147,7 @@ export const reverseGeocode = async (
   } catch (err) {
     console.error('Reverse geocode error:', err);
     return {
-      line1: '',
+      line1: 'Error fetching location',
       pincode: '',
       city: 'Raipur',
       state: 'Chhattisgarh',

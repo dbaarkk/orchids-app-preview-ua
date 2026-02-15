@@ -13,17 +13,7 @@ export const useNativeNotifications = () => {
   const { user } = useAuth();
   const router = useRouter();
 
-  useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      PushNotifications.checkPermissions().then((res) => {
-        setStatus(res.receive as any);
-      });
-    } else {
-      setStatus('denied');
-    }
-  }, []);
-
-  const saveToken = async (deviceToken: string) => {
+  const saveToken = useCallback(async (deviceToken: string) => {
     if (!user) return;
     
     try {
@@ -39,7 +29,7 @@ export const useNativeNotifications = () => {
     } catch (err) {
       console.error('Failed to save device token', err);
     }
-  };
+  }, [user]);
 
   const registerNotifications = useCallback(async () => {
     if (!Capacitor.isNativePlatform()) return false;
@@ -85,6 +75,25 @@ export const useNativeNotifications = () => {
       return false;
     }
   }, [user]);
+
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      PushNotifications.checkPermissions().then((res) => {
+        setStatus(res.receive as any);
+        if (res.receive === 'granted') {
+          registerNotifications();
+        }
+      });
+    } else {
+      setStatus('denied');
+    }
+  }, [registerNotifications]);
+
+  useEffect(() => {
+    if (user && token) {
+      saveToken(token);
+    }
+  }, [user, token, saveToken]);
 
   return { registerNotifications, status, token };
 };

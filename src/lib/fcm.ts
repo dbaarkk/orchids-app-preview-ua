@@ -2,11 +2,19 @@ import admin from 'firebase-admin';
 
 if (!admin.apps.length) {
   try {
-    const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '{}');
-    if (serviceAccount.project_id) {
-      admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-      });
+    const saJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (saJson) {
+      const serviceAccount = typeof saJson === 'string' ? JSON.parse(saJson) : saJson;
+      if (serviceAccount.project_id) {
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+        });
+        console.log('Firebase Admin initialized successfully');
+      } else {
+        console.error('Firebase service account missing project_id');
+      }
+    } else {
+      console.error('FIREBASE_SERVICE_ACCOUNT_JSON env variable is missing');
     }
   } catch (error) {
     console.error('Firebase admin initialization error:', error);
@@ -14,13 +22,20 @@ if (!admin.apps.length) {
 }
 
 export const sendPushNotification = async (tokens: string[], title: string, body: string, data?: any) => {
-  if (!admin.apps.length || tokens.length === 0) {
-    console.log('FCM not initialized or no tokens provided');
-    return;
+  const isInitialized = admin.apps.length > 0;
+
+  // Filter out empty, null or invalid tokens
+  const validTokens = (tokens || []).filter(t => t && typeof t === 'string' && t.trim() !== '');
+
+  console.log(`Push Notification - Initialized: ${isInitialized}, Total Tokens: ${tokens?.length || 0}, Valid Tokens: ${validTokens.length}`);
+
+  if (!isInitialized || validTokens.length === 0) {
+    if (!isInitialized) console.error('FCM not initialized - check FIREBASE_SERVICE_ACCOUNT_JSON');
+    return [];
   }
 
   const message: admin.messaging.MulticastMessage = {
-    tokens,
+    tokens: validTokens,
     notification: {
       title,
       body,
@@ -33,27 +48,35 @@ export const sendPushNotification = async (tokens: string[], title: string, body
         clickAction: 'booking_confirmed',
       },
     },
+    apns: {
+      payload: {
+        aps: {
+          sound: 'default'
+        }
+      }
+    }
   };
 
   try {
     const response = await admin.messaging().sendEachForMulticast(message);
-    console.log(`Successfully sent ${response.successCount} messages; ${response.failureCount} messages failed.`);
+    console.log(`FCM Delivery Result: ${response.successCount} successes, ${response.failureCount} failures`);
 
+    const failedTokens: string[] = [];
     if (response.failureCount > 0) {
-      const failedTokens: string[] = [];
       response.responses.forEach((resp, idx) => {
         if (!resp.success) {
           const errorCode = resp.error?.code;
+          console.warn(`Token at index ${idx} failed with error: ${errorCode}`);
           if (errorCode === 'messaging/invalid-registration-token' ||
               errorCode === 'messaging/registration-token-not-registered') {
-            failedTokens.push(tokens[idx]);
+            failedTokens.push(validTokens[idx]);
           }
         }
       });
-      return failedTokens;
     }
+    return failedTokens;
   } catch (error) {
     console.error('Error sending multicast message:', error);
+    return [];
   }
-  return [];
 };

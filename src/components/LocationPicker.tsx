@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
+import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 import { Button } from './ui/button';
 import { MapPin, Search, X, Loader2 } from 'lucide-react';
 import { Input } from './ui/input';
@@ -29,13 +29,16 @@ export default function LocationPicker({ onSelect, onClose, initialCoords, initi
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    const loader = new Loader({
-      apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-      version: 'weekly',
-      libraries: ['places']
+    setOptions({
+      key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+      v: 'weekly',
     });
 
-    loader.load().then(() => {
+    Promise.all([
+      importLibrary('maps'),
+      importLibrary('places'),
+      importLibrary('marker')
+    ]).then(() => {
       if (!mapRef.current) return;
 
       const map = new google.maps.Map(mapRef.current, {

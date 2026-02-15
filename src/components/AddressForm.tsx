@@ -117,7 +117,6 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
               type="text"
               value={line1}
               onChange={(e) => setLine1(e.target.value)}
-              onClick={() => fetchCurrentLocation()}
               placeholder="House/Flat No., Street, Area"
               className={`w-full px-4 py-3 rounded-xl border ${errors.line1 ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm`}
             />
