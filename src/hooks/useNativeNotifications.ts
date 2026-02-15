@@ -5,11 +5,13 @@ import { PushNotifications, Token, ActionPerformed, PushNotificationSchema } fro
 import { Capacitor } from '@capacitor/core';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/lib/auth-context';
+import { useRouter } from 'next/navigation';
 
 export const useNativeNotifications = () => {
   const [status, setStatus] = useState<'prompt' | 'granted' | 'denied' | 'error' | 'loading'>('loading');
   const [token, setToken] = useState<string | null>(null);
   const { user } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
@@ -70,6 +72,10 @@ export const useNativeNotifications = () => {
 
       PushNotifications.addListener('pushNotificationActionPerformed', (action: ActionPerformed) => {
         console.log('Push action performed: ' + JSON.stringify(action));
+        const data = action.notification.data;
+        if (data.type === 'booking_confirmed' && data.booking_id) {
+          router.push('/bookings'); // Since we don't have a specific detail page, we go to bookings list or we can try to scroll to it
+        }
       });
 
       return true;

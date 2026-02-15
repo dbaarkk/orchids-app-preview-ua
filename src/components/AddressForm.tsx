@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { X, Loader2, MapPin } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Loader2, MapPin, Map as MapIcon, Navigation } from 'lucide-react';
 import { UserAddress } from '@/lib/auth-context';
+import { getAccurateLocation, reverseGeocode } from '@/lib/location';
+import MapSelector from './MapSelector';
+import { toast } from 'sonner';
 
 interface AddressFormProps {
   onSave: (address: UserAddress) => Promise<{ success: boolean; error?: string }>;
@@ -15,7 +18,44 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
   const [line2, setLine2] = useState(initialAddress?.line2 || '');
   const [pincode, setPincode] = useState(initialAddress?.pincode || '492001');
   const [saving, setSaving] = useState(false);
+  const [fetching, setFetching] = useState(false);
+  const [showMap, setShowMap] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!initialAddress?.line1) {
+      fetchCurrentLocation();
+    }
+  }, []);
+
+  const fetchCurrentLocation = async () => {
+    setFetching(true);
+    try {
+      const loc = await getAccurateLocation();
+      const addr = await reverseGeocode(loc.latitude, loc.longitude);
+      setLine1(addr.line1);
+      if (addr.pincode) setPincode(addr.pincode);
+      toast.success('Location fetched accurately');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Failed to fetch location automatically');
+    }
+    setFetching(false);
+  };
+
+  const handleMapSelect = async (lat: number, lng: number) => {
+    setShowMap(false);
+    setFetching(true);
+    try {
+      const addr = await reverseGeocode(lat, lng);
+      setLine1(addr.line1);
+      if (addr.pincode) setPincode(addr.pincode);
+      toast.success('Location selected from map');
+    } catch (err) {
+      toast.error('Failed to get address from selected point');
+    }
+    setFetching(false);
+  };
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -49,15 +89,40 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-6 space-y-5">
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={fetchCurrentLocation}
+            disabled={fetching}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-primary/10 text-primary rounded-xl text-sm font-bold hover:bg-primary/20 transition-colors border border-primary/20"
+          >
+            {fetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
+            Fetch Current Location
+          </button>
+
+          <button
+            onClick={() => setShowMap(true)}
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-200 transition-colors border border-gray-200"
+          >
+            <MapIcon className="w-4 h-4" />
+            Select location from maps
+          </button>
+        </div>
+
+        <div className="h-px bg-gray-100 my-2" />
+
         <div>
           <label className="text-sm font-medium text-gray-700 mb-1.5 block">Address Line 1 *</label>
-          <input
-            type="text"
-            value={line1}
-            onChange={(e) => setLine1(e.target.value)}
-            placeholder="House/Flat No., Street, Area"
-            className={`w-full px-4 py-3 rounded-xl border ${errors.line1 ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm`}
-          />
+          <div className="relative">
+            <input
+              type="text"
+              value={line1}
+              onChange={(e) => setLine1(e.target.value)}
+              onClick={() => fetchCurrentLocation()}
+              placeholder="House/Flat No., Street, Area"
+              className={`w-full px-4 py-3 rounded-xl border ${errors.line1 ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm`}
+            />
+            {fetching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-primary" />}
+          </div>
           {errors.line1 && <p className="text-red-500 text-xs mt-1">{errors.line1}</p>}
         </div>
 
@@ -102,6 +167,13 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
             </p>
           </div>
       </div>
+
+      {showMap && (
+        <MapSelector
+          onClose={() => setShowMap(false)}
+          onSelect={handleMapSelect}
+        />
+      )}
 
       <div className="p-4 bg-white border-t border-gray-100 pb-8 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         <button

@@ -3,7 +3,7 @@
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
-import { LogOut, Check, RefreshCw, ChevronDown, ChevronUp, User, Phone, Mail, MapPin, Car, FileText, Calendar, Loader2, Copy, Users, CalendarDays, KeyRound, Eye, EyeOff, X, ShieldCheck, IndianRupee, Wrench, AlertTriangle, Truck, Home, Search, Ticket, Plus, Trash2, ToggleLeft, ToggleRight, ChevronRight } from 'lucide-react';
+import { LogOut, Check, RefreshCw, ChevronDown, ChevronUp, User, Phone, Mail, MapPin, Car, FileText, Calendar, Loader2, Copy, Users, CalendarDays, KeyRound, Eye, EyeOff, X, ShieldCheck, IndianRupee, Wrench, AlertTriangle, Truck, Home, Search, Ticket, Plus, Trash2, ToggleLeft, ToggleRight, ChevronRight, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -96,7 +96,7 @@ export default function AdminPanel() {
   const [loadingServices, setLoadingServices] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'all' | 'Pending' | 'Confirmed' | 'Completed' | 'Rescheduled'>('all');
+  const [filter, setFilter] = useState<'all' | 'Pending' | 'Confirmed' | 'Completed' | 'Rescheduled' | 'Cancelled'>('all');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
@@ -118,6 +118,10 @@ export default function AdminPanel() {
   const [newCouponDiscount, setNewCouponDiscount] = useState('');
   const [addingCoupon, setAddingCoupon] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [notificationTitle, setNotificationTitle] = useState('');
+  const [notificationContent, setNotificationContent] = useState('');
+  const [pushingNotification, setPushingNotification] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !loggingOut && (!user || !isAdmin)) {
@@ -323,6 +327,7 @@ export default function AdminPanel() {
     confirmed: bookings.filter(b => b.status === 'Confirmed').length,
     completed: bookings.filter(b => b.status === 'Completed').length,
     rescheduled: bookings.filter(b => b.status === 'Rescheduled').length,
+    cancelled: bookings.filter(b => b.status === 'Cancelled').length,
   };
 
   if (isLoading) return (
@@ -338,6 +343,7 @@ export default function AdminPanel() {
       case 'Confirmed': return 'bg-green-100 text-green-700 border-green-200';
       case 'Completed': return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'Rescheduled': return 'bg-orange-100 text-orange-700 border-orange-200';
+      case 'Cancelled': return 'bg-red-100 text-red-700 border-red-200';
       default: return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
@@ -356,6 +362,9 @@ export default function AdminPanel() {
             <p className="text-xs text-white/70">Urban Auto Garage</p>
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={() => setShowNotificationModal(true)} className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors" title="Push Notification">
+              <Bell className="w-5 h-5" />
+            </button>
             <button onClick={() => setActiveTab('coupons')} className={`p-2 rounded-full hover:bg-white/30 transition-colors ${activeTab === 'coupons' ? 'bg-white/30' : 'bg-white/20'}`} title="Coupons">
               <Ticket className="w-5 h-5" />
             </button>
@@ -395,26 +404,30 @@ export default function AdminPanel() {
 
       {activeTab === 'bookings' && (
         <>
-          <div className="px-4 py-4 grid grid-cols-5 gap-1.5">
-            <button onClick={() => setFilter('all')} className={`p-2.5 rounded-xl text-center transition-all ${filter === 'all' ? 'bg-primary text-white shadow-md' : 'bg-white text-gray-700 shadow-sm'}`}>
-              <p className="text-lg font-bold">{stats.total}</p>
-              <p className="text-[9px] font-medium">All</p>
+          <div className="px-4 py-4 grid grid-cols-6 gap-1">
+            <button onClick={() => setFilter('all')} className={`p-2 rounded-xl text-center transition-all ${filter === 'all' ? 'bg-primary text-white shadow-md' : 'bg-white text-gray-700 shadow-sm'}`}>
+              <p className="text-base font-bold">{stats.total}</p>
+              <p className="text-[8px] font-medium">All</p>
             </button>
-            <button onClick={() => setFilter('Pending')} className={`p-2.5 rounded-xl text-center transition-all ${filter === 'Pending' ? 'bg-yellow-500 text-white shadow-md' : 'bg-white text-gray-700 shadow-sm'}`}>
-              <p className="text-lg font-bold">{stats.pending}</p>
-              <p className="text-[9px] font-medium">Pending</p>
+            <button onClick={() => setFilter('Pending')} className={`p-2 rounded-xl text-center transition-all ${filter === 'Pending' ? 'bg-yellow-500 text-white shadow-md' : 'bg-white text-gray-700 shadow-sm'}`}>
+              <p className="text-base font-bold">{stats.pending}</p>
+              <p className="text-[8px] font-medium">Pending</p>
             </button>
-            <button onClick={() => setFilter('Rescheduled')} className={`p-2.5 rounded-xl text-center transition-all ${filter === 'Rescheduled' ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-700 shadow-sm'}`}>
-              <p className="text-lg font-bold">{stats.rescheduled}</p>
-              <p className="text-[9px] font-medium">Resched.</p>
+            <button onClick={() => setFilter('Rescheduled')} className={`p-2 rounded-xl text-center transition-all ${filter === 'Rescheduled' ? 'bg-orange-500 text-white shadow-md' : 'bg-white text-gray-700 shadow-sm'}`}>
+              <p className="text-base font-bold">{stats.rescheduled}</p>
+              <p className="text-[8px] font-medium">Resched.</p>
             </button>
-            <button onClick={() => setFilter('Confirmed')} className={`p-2.5 rounded-xl text-center transition-all ${filter === 'Confirmed' ? 'bg-green-500 text-white shadow-md' : 'bg-white text-gray-700 shadow-sm'}`}>
-              <p className="text-lg font-bold">{stats.confirmed}</p>
-              <p className="text-[9px] font-medium">Confirmed</p>
+            <button onClick={() => setFilter('Confirmed')} className={`p-2 rounded-xl text-center transition-all ${filter === 'Confirmed' ? 'bg-green-500 text-white shadow-md' : 'bg-white text-gray-700 shadow-sm'}`}>
+              <p className="text-base font-bold">{stats.confirmed}</p>
+              <p className="text-[8px] font-medium">Confirmed</p>
             </button>
-            <button onClick={() => setFilter('Completed')} className={`p-2.5 rounded-xl text-center transition-all ${filter === 'Completed' ? 'bg-blue-500 text-white shadow-md' : 'bg-white text-gray-700 shadow-sm'}`}>
-              <p className="text-lg font-bold">{stats.completed}</p>
-              <p className="text-[9px] font-medium">Done</p>
+            <button onClick={() => setFilter('Completed')} className={`p-2 rounded-xl text-center transition-all ${filter === 'Completed' ? 'bg-blue-500 text-white shadow-md' : 'bg-white text-gray-700 shadow-sm'}`}>
+              <p className="text-base font-bold">{stats.completed}</p>
+              <p className="text-[8px] font-medium">Done</p>
+            </button>
+            <button onClick={() => setFilter('Cancelled')} className={`p-2 rounded-xl text-center transition-all ${filter === 'Cancelled' ? 'bg-red-500 text-white shadow-md' : 'bg-white text-gray-700 shadow-sm'}`}>
+              <p className="text-base font-bold">{stats.cancelled}</p>
+              <p className="text-[8px] font-medium">Canc.</p>
             </button>
           </div>
 
@@ -763,6 +776,69 @@ export default function AdminPanel() {
                 <button onClick={handlePasswordReset} disabled={passwordLoading} className="w-full bg-primary text-white py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-60 flex items-center justify-center gap-2">
                   {passwordLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   {passwordLoading ? 'Updating...' : 'Update Password'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showNotificationModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowNotificationModal(false)}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">Send Push Notification</h3>
+                <button onClick={() => setShowNotificationModal(false)} className="p-1"><X className="w-5 h-5 text-gray-400" /></button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1.5 block">Notification Title</label>
+                  <input
+                    type="text"
+                    value={notificationTitle}
+                    onChange={(e) => setNotificationTitle(e.target.value)}
+                    placeholder="Enter title"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1.5 block">Notification Content</label>
+                  <textarea
+                    value={notificationContent}
+                    onChange={(e) => setNotificationContent(e.target.value)}
+                    placeholder="Enter message content"
+                    rows={4}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm resize-none"
+                  />
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!notificationTitle.trim() || !notificationContent.trim()) {
+                      toast.error('Please enter both title and content');
+                      return;
+                    }
+                    setPushingNotification(true);
+                    try {
+                      await adminAction({
+                        action: 'send-push-notification',
+                        title: notificationTitle,
+                        content: notificationContent
+                      });
+                      toast.success('Notification pushed to all users');
+                      setShowNotificationModal(false);
+                      setNotificationTitle('');
+                      setNotificationContent('');
+                    } catch (err: any) {
+                      toast.error(err.message || 'Failed to push notification');
+                    }
+                    setPushingNotification(false);
+                  }}
+                  disabled={pushingNotification}
+                  className="w-full bg-primary text-white py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {pushingNotification ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
+                  {pushingNotification ? 'Sending...' : 'Send to Everyone'}
                 </button>
               </div>
             </motion.div>
