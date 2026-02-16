@@ -46,6 +46,7 @@ export default function BookingSummaryPage() {
       router.replace('/login');
       return;
     }
+    if (bookingDone) return;
     const stored = localStorage.getItem('ua_booking_draft');
     if (!stored) {
       router.replace('/booking');
