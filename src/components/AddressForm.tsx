@@ -8,7 +8,7 @@ import MapSelector from './MapSelector';
 import { toast } from 'sonner';
 
 interface AddressFormProps {
-  onSave: (address: UserAddress) => Promise<{ success: boolean; error?: string }>;
+  onSave: (address: UserAddress, coords?: { lat: number; lng: number }) => Promise<{ success: boolean; error?: string }>;
   onClose: () => void;
   initialAddress?: UserAddress;
 }
@@ -17,6 +17,7 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
   const [line1, setLine1] = useState(initialAddress?.line1 || '');
   const [line2, setLine2] = useState(initialAddress?.line2 || '');
   const [pincode, setPincode] = useState(initialAddress?.pincode || '492001');
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | undefined>();
   const [saving, setSaving] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [showMap, setShowMap] = useState(false);
@@ -32,6 +33,7 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
     setFetching(true);
     try {
       const loc = await getAccurateLocation();
+      setCoords({ lat: loc.latitude, lng: loc.longitude });
       const addr = await reverseGeocode(loc.latitude, loc.longitude);
       setLine1(addr.line1);
       if (addr.pincode) setPincode(addr.pincode);
@@ -47,6 +49,7 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
     setShowMap(false);
     setFetching(true);
     try {
+      setCoords({ lat, lng });
       const addr = await reverseGeocode(lat, lng);
       setLine1(addr.line1);
       if (addr.pincode) setPincode(addr.pincode);
@@ -69,7 +72,13 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
   const handleSave = async () => {
     if (!validate()) return;
     setSaving(true);
-    const result = await onSave({ line1: line1.trim(), line2: line2.trim(), state: 'Chhattisgarh', city: 'Raipur', pincode: pincode.trim() });
+    const result = await onSave({
+      line1: line1.trim(),
+      line2: line2.trim(),
+      state: 'Chhattisgarh',
+      city: 'Raipur',
+      pincode: pincode.trim()
+    }, coords);
     setSaving(false);
     if (result.success) {
       onClose();

@@ -44,8 +44,8 @@ export default function HomePage() {
     );
   }
 
-  const handleAddressSave = async (address: any) => {
-    const result = await updateAddress(address);
+  const handleAddressSave = async (address: any, coords?: { lat: number; lng: number }) => {
+    const result = await updateAddress(address, coords);
     if (result.success) {
       toast.success('Address saved successfully!');
     } else {

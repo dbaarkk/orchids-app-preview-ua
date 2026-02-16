@@ -148,8 +148,8 @@ export default function BookingSummaryPage() {
     setCouponCode('');
   };
 
-  const handleAddressSave = async (address: any) => {
-    const result = await updateAddress(address);
+  const handleAddressSave = async (address: any, coords?: { lat: number; lng: number }) => {
+    const result = await updateAddress(address, coords);
     if (result.success) toast.success('Address saved!');
     else toast.error(result.error || 'Failed to save address');
     return result;
@@ -215,6 +215,7 @@ export default function BookingSummaryPage() {
             vehicleMakeModel: summaryData.vehicleMakeModel,
             serviceMode: summaryData.serviceMode,
             address: user.locationAddress || '',
+            locationCoords: user.locationCoords,
             preferredDateTime: `${summaryData.date} ${summaryData.time}`,
             notes: summaryData.notes,
             totalAmount: finalAmount,
@@ -252,6 +253,7 @@ export default function BookingSummaryPage() {
         vehicleMakeModel: summaryData.vehicleMakeModel,
         serviceMode: summaryData.serviceMode,
         address: user.locationAddress || '',
+        locationCoords: user.locationCoords,
         preferredDateTime: `${summaryData.date} ${summaryData.time}`,
         notes: summaryData.notes,
         totalAmount: finalAmount,

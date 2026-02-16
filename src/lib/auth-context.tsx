@@ -42,6 +42,7 @@ export interface Booking {
     paymentStatus?: string;
     paymentMethod?: string;
     createdAt: string;
+    locationCoords?: { lat: number; lng: number };
 }
 
 interface AuthContextType {
@@ -53,7 +54,7 @@ interface AuthContextType {
     logout: () => Promise<void>;
     bookings: Booking[];
     refreshBookings: () => Promise<void>;
-    updateAddress: (address: UserAddress) => Promise<{ success: boolean; error?: string }>;
+    updateAddress: (address: UserAddress, coords?: { lat: number; lng: number }) => Promise<{ success: boolean; error?: string }>;
     updateLocation: (address: string, coords: { lat: number; lng: number }) => Promise<{ success: boolean; error?: string }>;
     addBooking: (booking: any) => Promise<{ success: boolean; error?: string }>;
     cancelBooking: (bookingId: string) => Promise<{ success: boolean; error?: string }>;
@@ -112,7 +113,8 @@ function mapBooking(b: any): Booking {
       rescheduledBy: b.rescheduled_by || null,
       paymentStatus: b.payment_status || 'unpaid',
       paymentMethod: b.payment_method || 'pay_later',
-      createdAt: b.created_at
+      createdAt: b.created_at,
+      locationCoords: b.location_coords
   };
 }
 
@@ -398,28 +400,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setBookings(b);
   }, []);
 
-  const updateAddress = useCallback(async (address: UserAddress) => {
+  const updateAddress = useCallback(async (address: UserAddress, coords?: { lat: number; lng: number }) => {
     const current = userRef.current;
     if (!current) return { success: false, error: 'Not logged in' };
 
     try {
       const fullAddress = formatAddress(address);
+      const updateData: any = {
+        address_line1: address.line1,
+        address_line2: address.line2,
+        state: address.state,
+        city: address.city,
+        pincode: address.pincode,
+        location_address: fullAddress,
+        updated_at: new Date().toISOString()
+      };
+      if (coords) updateData.location_coords = coords;
+
       const { error } = await supabase
         .from('profiles')
-        .update({
-          address_line1: address.line1,
-          address_line2: address.line2,
-          state: address.state,
-          city: address.city,
-          pincode: address.pincode,
-          location_address: fullAddress,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', current.id);
 
       if (error) throw error;
 
-      setUser(prev => prev ? { ...prev, address, locationAddress: fullAddress } : null);
+      setUser(prev => prev ? {
+        ...prev,
+        address,
+        locationAddress: fullAddress,
+        locationCoords: coords || prev.locationCoords
+      } : null);
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.message };
@@ -465,6 +475,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
           const bookingAddress = bookingData.address || (current.address ? formatAddress(current.address) : current.locationAddress || '');
+          const bookingCoords = bookingData.locationCoords || current.locationCoords || null;
 
             const { data, error } = await supabase
               .from('bookings')
@@ -490,6 +501,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                   payment_status: bookingData.paymentStatus || 'unpaid',
                   razorpay_order_id: bookingData.razorpayOrderId || null,
                   razorpay_payment_id: bookingData.razorpayPaymentId || null,
+                  location_coords: bookingCoords
               }])
             .select();
 

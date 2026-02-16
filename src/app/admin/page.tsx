@@ -28,6 +28,7 @@ interface AdminBooking {
   user_phone: string;
   payment_status: string;
   payment_method: string;
+  location_coords?: { lat: number; lng: number };
 }
 
 interface Profile {
@@ -45,6 +46,7 @@ interface Profile {
   verified: boolean;
   blocked: boolean;
   wallet_balance: number;
+  location_coords?: { lat: number; lng: number };
 }
 
 interface ServicePrice {
@@ -511,7 +513,23 @@ export default function AdminPanel() {
                               <span className="text-xs text-gray-600">{booking.service_mode}</span>
                             </div>
                           )}
-                          <div className="flex items-start gap-2"><MapPin className="w-3.5 h-3.5 text-primary/60 mt-0.5" /><span className="text-xs text-gray-600">{booking.address || 'No address'}</span></div>
+                          <div className="flex items-start gap-2">
+                            <MapPin className="w-3.5 h-3.5 text-primary/60 mt-0.5" />
+                            <div className="flex-1">
+                              <span className="text-xs text-gray-600">{booking.address || 'No address'}</span>
+                              {booking.location_coords && (
+                                <a
+                                  href={`https://www.google.com/maps/search/?api=1&query=${booking.location_coords.lat},${booking.location_coords.lng}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="block mt-1 text-[10px] text-primary font-bold hover:underline"
+                                >
+                                  View on Google Maps
+                                </a>
+                              )}
+                            </div>
+                          </div>
                           {booking.notes && <div className="flex items-start gap-2"><FileText className="w-3.5 h-3.5 text-primary/60 mt-0.5" /><span className="text-xs text-gray-600">{booking.notes}</span></div>}
                           <p className="text-[10px] text-gray-400">Booked: {new Date(booking.created_at).toLocaleString()}</p>
 
