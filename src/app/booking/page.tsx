@@ -18,7 +18,7 @@ function BookingContent() {
     const searchParams = useSearchParams();
     const serviceId = searchParams.get('service');
     
-    const [selectedServices, setSelectedServices] = useState<string[]>(serviceId ? [serviceId] : []);
+    const [selectedServices, setSelectedServices] = useState<string[]>([]);
     const [showServiceList, setShowServiceList] = useState(false);
     const [vehicleType, setVehicleType] = useState('');
     const [vehicleNumber, setVehicleNumber] = useState('');
@@ -27,6 +27,38 @@ function BookingContent() {
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
     const [notes, setNotes] = useState('');
+
+    // Draft persistence
+    useEffect(() => {
+      const draft = localStorage.getItem('ua_booking_draft');
+      if (draft) {
+        try {
+          const data = JSON.parse(draft);
+          if (data.selectedServices) setSelectedServices(data.selectedServices);
+          if (data.vehicleType) setVehicleType(data.vehicleType);
+          if (data.vehicleNumber) setVehicleNumber(data.vehicleNumber);
+          if (data.vehicleMakeModel) setVehicleMakeModel(data.vehicleMakeModel);
+          if (data.serviceMode) setServiceMode(data.serviceMode);
+          if (data.date) setDate(data.date);
+          if (data.time) setTime(data.time);
+          if (data.notes) setNotes(data.notes);
+        } catch (e) {
+          console.error('Failed to parse booking draft', e);
+        }
+      }
+    }, []);
+
+    useEffect(() => {
+      const data = { selectedServices, vehicleType, vehicleNumber, vehicleMakeModel, serviceMode, date, time, notes };
+      localStorage.setItem('ua_booking_draft', JSON.stringify(data));
+    }, [selectedServices, vehicleType, vehicleNumber, vehicleMakeModel, serviceMode, date, time, notes]);
+
+    // Handle initial service from URL if no draft or if specifically requested
+    useEffect(() => {
+      if (serviceId && selectedServices.length === 0) {
+        setSelectedServices([serviceId]);
+      }
+    }, [serviceId]);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [dbPrices, setDbPrices] = useState<Record<string, any>>({});
     const [pricesLoaded, setPricesLoaded] = useState(false);
@@ -141,7 +173,7 @@ function BookingContent() {
           servicePrices: Object.fromEntries(selectedServices.map(id => [id, getPrice(id)])),
         };
 
-      sessionStorage.setItem('bookingSummary', JSON.stringify(summaryData));
+      localStorage.setItem('ua_booking_draft', JSON.stringify(summaryData));
       router.push('/booking/summary');
     };
 

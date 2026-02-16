@@ -18,6 +18,15 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
   const [line2, setLine2] = useState(initialAddress?.line2 || '');
   const [pincode, setPincode] = useState(initialAddress?.pincode || '492001');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | undefined>();
+
+  useEffect(() => {
+    if (!initialAddress?.line1) {
+      const savedAddr = localStorage.getItem('ua_last_fetched_address');
+      const savedPin = localStorage.getItem('ua_last_fetched_pincode');
+      if (savedAddr) setLine1(savedAddr);
+      if (savedPin) setPincode(savedPin);
+    }
+  }, [initialAddress]);
   const [saving, setSaving] = useState(false);
   const [fetching, setFetching] = useState(false);
   const [showMap, setShowMap] = useState(false);
@@ -37,6 +46,10 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
       const addr = await reverseGeocode(loc.latitude, loc.longitude);
       setLine1(addr.line1);
       if (addr.pincode) setPincode(addr.pincode);
+
+      localStorage.setItem('ua_last_fetched_address', addr.line1);
+      if (addr.pincode) localStorage.setItem('ua_last_fetched_pincode', addr.pincode);
+
       toast.success('Location fetched accurately');
     } catch (err: any) {
       console.error(err);
@@ -102,18 +115,10 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
           <button
             onClick={fetchCurrentLocation}
             disabled={fetching}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-primary/10 text-primary rounded-xl text-sm font-bold hover:bg-primary/20 transition-colors border border-primary/20"
+            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 transition-all shadow-md active:scale-[0.98]"
           >
             {fetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
             Fetch Current Location
-          </button>
-
-          <button
-            onClick={() => setShowMap(true)}
-            className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-200 transition-colors border border-gray-200"
-          >
-            <MapIcon className="w-4 h-4" />
-            Select location from maps
           </button>
         </div>
 

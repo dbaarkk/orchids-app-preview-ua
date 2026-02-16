@@ -46,12 +46,17 @@ export default function BookingSummaryPage() {
       router.replace('/login');
       return;
     }
-    const stored = sessionStorage.getItem('bookingSummary');
+    const stored = localStorage.getItem('ua_booking_draft');
     if (!stored) {
       router.replace('/booking');
       return;
     }
-    setSummaryData(JSON.parse(stored));
+    try {
+      setSummaryData(JSON.parse(stored));
+    } catch (e) {
+      console.error('Failed to parse booking draft', e);
+      router.replace('/booking');
+    }
   }, [isLoading, user, router]);
 
   useEffect(() => {
@@ -227,7 +232,7 @@ export default function BookingSummaryPage() {
 
           if (result.success) {
             setBookingDone(true);
-            sessionStorage.removeItem('bookingSummary');
+            localStorage.removeItem('ua_booking_draft');
             await refreshUser();
 
             toast.success('Payment successful! Booking confirmed.');
@@ -265,7 +270,7 @@ export default function BookingSummaryPage() {
 
         if (result.success) {
           setBookingDone(true);
-          sessionStorage.removeItem('bookingSummary');
+          localStorage.removeItem('ua_booking_draft');
           toast.success('Booking confirmed!');
           router.replace('/bookings');
       } else {

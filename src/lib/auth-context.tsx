@@ -143,24 +143,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const userRef = useRef<User | null>(null);
-    useEffect(() => {
-      userRef.current = user;
-    }, [user]);
+
+  // Profile persistence for split-second glitch fix
+  useEffect(() => {
+    const cached = localStorage.getItem('ua_cached_user');
+    if (cached) {
+      try {
+        const u = JSON.parse(cached);
+        setUser(u);
+        userRef.current = u;
+      } catch (e) {
+        console.error('Failed to parse cached user', e);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    userRef.current = user;
+    if (user) {
+      localStorage.setItem('ua_cached_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('ua_cached_user');
+    }
+  }, [user]);
 
   useEffect(() => {
     let mounted = true;
 
     const loadUser = async (userId: string, email?: string, meta?: any) => {
         const profilePromise = fetchProfile(userId);
-        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+        // Faster timeout for mobile UX
+        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 2000));
         const profile = await Promise.race([profilePromise, timeoutPromise]);
+
         if (!mounted) return;
+
         if (profile) {
           const u = mapProfileToUser(profile);
           setUser(u);
           userRef.current = u;
           fetchBookings(u.id).then(b => { if (mounted) setBookings(b); });
-        } else {
+        } else if (!userRef.current) {
           const u: User = {
             id: userId,
             name: meta?.full_name || 'User',
@@ -174,13 +197,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const init = async () => {
           try {
-            const sessionPromise = supabase.auth.getSession();
-            const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
-            const result = await Promise.race([sessionPromise, timeoutPromise]);
+            const { data: { session } } = await supabase.auth.getSession();
             if (!mounted) return;
-            const session = result && 'data' in result ? result.data.session : null;
             if (session?.user) {
               await loadUser(session.user.id, session.user.email, session.user.user_metadata);
+            } else {
+              setUser(null);
+              userRef.current = null;
             }
           } catch {}
           if (mounted) setIsLoading(false);
@@ -388,6 +411,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     userRef.current = null;
     setBookings([]);
+    localStorage.removeItem('ua_cached_user');
     try {
       await supabase.auth.signOut();
     } catch {}
