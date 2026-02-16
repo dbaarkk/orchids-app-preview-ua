@@ -227,6 +227,7 @@ export default function BookingSummaryPage() {
           if (result.success) {
             setBookingDone(true);
             sessionStorage.removeItem('bookingSummary');
+            localStorage.removeItem('ua_booking_draft');
             await refreshUser();
 
             toast.success('Payment successful! Booking confirmed.');
@@ -264,6 +265,7 @@ export default function BookingSummaryPage() {
         if (result.success) {
           setBookingDone(true);
           sessionStorage.removeItem('bookingSummary');
+          localStorage.removeItem('ua_booking_draft');
           toast.success('Booking confirmed!');
           router.replace('/bookings');
       } else {

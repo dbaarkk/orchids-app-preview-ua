@@ -5,9 +5,11 @@ import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { getAssetPath } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 export default function SplashScreen() {
   const { user, isLoading, isAdmin } = useAuth();
+  const router = useRouter();
   const [minDelayDone, setMinDelayDone] = useState(false);
   const [redirected, setRedirected] = useState(false);
 
@@ -20,23 +22,30 @@ export default function SplashScreen() {
     const fallback = setTimeout(() => {
       if (!redirected) {
         setRedirected(true);
-        window.location.href = '/login';
+        router.replace('/login');
       }
     }, 5000);
     return () => clearTimeout(fallback);
-  }, [redirected]);
+  }, [redirected, router]);
 
   useEffect(() => {
     if (!minDelayDone || redirected) return;
-    if (isLoading) return;
+
+    // We can redirect even if isLoading is true IF we have a cached user
+    // However, if we want to be sure about the session, we should wait for isLoading to be false
+    // BUT since we now have ua_cached_user, user will be populated immediately if it exists.
+    if (isLoading && !user) return;
 
     setRedirected(true);
     if (user) {
-      window.location.href = isAdmin ? '/admin' : '/home';
+      router.replace(isAdmin ? '/admin' : '/home');
+    } else if (!isLoading) {
+      router.replace('/login');
     } else {
-      window.location.href = '/login';
+      // Still loading and no user, keep waiting
+      setRedirected(false);
     }
-  }, [minDelayDone, isLoading, user, isAdmin, redirected]);
+  }, [minDelayDone, isLoading, user, isAdmin, redirected, router]);
 
   return (
     <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center">

@@ -137,12 +137,30 @@ async function fetchBookings(userId: string): Promise<Booking[]> {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const cached = localStorage.getItem('ua_cached_user');
+        return cached ? JSON.parse(cached) : null;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const userRef = useRef<User | null>(null);
+
     useEffect(() => {
       userRef.current = user;
+      if (typeof window !== 'undefined') {
+        if (user) {
+          localStorage.setItem('ua_cached_user', JSON.stringify(user));
+        } else {
+          localStorage.removeItem('ua_cached_user');
+        }
+      }
     }, [user]);
 
   useEffect(() => {
@@ -179,8 +197,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const session = result && 'data' in result ? result.data.session : null;
             if (session?.user) {
               await loadUser(session.user.id, session.user.email, session.user.user_metadata);
+            } else {
+              setUser(null);
+              userRef.current = null;
             }
-          } catch {}
+          } catch {
+            setUser(null);
+            userRef.current = null;
+          }
           if (mounted) setIsLoading(false);
         };
 

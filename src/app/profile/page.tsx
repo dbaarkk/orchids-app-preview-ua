@@ -29,7 +29,7 @@ export default function ProfilePage() {
 
     useEffect(() => {
         if (!isLoading && !user) {
-          router.replace('/signup');
+          router.replace('/login');
         }
       }, [isLoading, user?.id]);
 
@@ -51,7 +51,7 @@ export default function ProfilePage() {
   const handleLogout = async () => {
     await logout();
     toast.success('Logged out successfully');
-    router.replace('/signup');
+    router.replace('/login');
   };
 
   const openPasswordModal = async () => {

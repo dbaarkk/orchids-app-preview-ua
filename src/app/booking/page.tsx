@@ -27,6 +27,41 @@ function BookingContent() {
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
     const [notes, setNotes] = useState('');
+
+    // Load draft
+    useEffect(() => {
+      const draft = localStorage.getItem('ua_booking_draft');
+      if (draft) {
+        try {
+          const data = JSON.parse(draft);
+          if (data.selectedServices && !serviceId) setSelectedServices(data.selectedServices);
+          if (data.vehicleType) setVehicleType(data.vehicleType);
+          if (data.vehicleNumber) setVehicleNumber(data.vehicleNumber);
+          if (data.vehicleMakeModel) setVehicleMakeModel(data.vehicleMakeModel);
+          if (data.serviceMode) setServiceMode(data.serviceMode);
+          if (data.date) setDate(data.date);
+          if (data.time) setTime(data.time);
+          if (data.notes) setNotes(data.notes);
+        } catch (e) {
+          console.error('Failed to parse booking draft', e);
+        }
+      }
+    }, [serviceId]);
+
+    // Save draft
+    useEffect(() => {
+      const draft = {
+        selectedServices,
+        vehicleType,
+        vehicleNumber,
+        vehicleMakeModel,
+        serviceMode,
+        date,
+        time,
+        notes
+      };
+      localStorage.setItem('ua_booking_draft', JSON.stringify(draft));
+    }, [selectedServices, vehicleType, vehicleNumber, vehicleMakeModel, serviceMode, date, time, notes]);
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [dbPrices, setDbPrices] = useState<Record<string, any>>({});
     const [pricesLoaded, setPricesLoaded] = useState(false);

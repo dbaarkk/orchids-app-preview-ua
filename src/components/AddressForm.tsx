@@ -24,7 +24,15 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
 
   useEffect(() => {
     if (!initialAddress?.line1) {
-      fetchCurrentLocation();
+      const cachedAddress = localStorage.getItem('ua_last_fetched_address');
+      const cachedPincode = localStorage.getItem('ua_last_fetched_pincode');
+
+      if (cachedAddress) {
+        setLine1(cachedAddress);
+        if (cachedPincode) setPincode(cachedPincode);
+      } else {
+        fetchCurrentLocation();
+      }
     }
   }, []);
 
@@ -35,6 +43,12 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
       const addr = await reverseGeocode(loc.latitude, loc.longitude);
       setLine1(addr.line1);
       if (addr.pincode) setPincode(addr.pincode);
+
+      localStorage.setItem('ua_last_fetched_address', addr.line1);
+      if (addr.pincode) {
+        localStorage.setItem('ua_last_fetched_pincode', addr.pincode);
+      }
+
       toast.success('Location fetched accurately');
     } catch (err: any) {
       console.error(err);
@@ -50,6 +64,12 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
       const addr = await reverseGeocode(lat, lng);
       setLine1(addr.line1);
       if (addr.pincode) setPincode(addr.pincode);
+
+      localStorage.setItem('ua_last_fetched_address', addr.line1);
+      if (addr.pincode) {
+        localStorage.setItem('ua_last_fetched_pincode', addr.pincode);
+      }
+
       toast.success('Location selected from map');
     } catch (err) {
       toast.error('Failed to get address from selected point');

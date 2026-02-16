@@ -26,7 +26,7 @@ export default function HomePage() {
 
     useEffect(() => {
       if (!isLoading && !user) {
-        router.replace('/signup');
+        router.replace('/login');
       }
     }, [isLoading, user, router]);
 

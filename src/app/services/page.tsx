@@ -21,7 +21,7 @@ function ServicesContent() {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.replace('/signup');
+      router.replace('/login');
     }
   }, [isLoading, user, router]);
 
