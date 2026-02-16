@@ -118,7 +118,7 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
             className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 transition-all shadow-md active:scale-[0.98]"
           >
             {fetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <Navigation className="w-4 h-4" />}
-            Fetch Current Location
+            Use current location
           </button>
         </div>
 
