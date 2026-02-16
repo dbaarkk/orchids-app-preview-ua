@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { importLibrary, setOptions } from '@googlemaps/js-api-loader';
 import { X, MapPin, Check, Loader2, Search } from 'lucide-react';
 
 const RAIPUR_BOUNDS = {
@@ -20,127 +19,106 @@ interface MapSelectorProps {
 export default function MapSelector({ onSelect, onClose, initialCenter }: MapSelectorProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
   const [selected, setSelected] = useState<{ lat: number; lng: number } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-
+  const [loading, setLoading] = useState(true);
   const [mapError, setMapError] = useState<string | null>(null);
 
   useEffect(() => {
-    setOptions({
-      key: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-      v: 'weekly',
-    });
+    let map: google.maps.Map;
+    let marker: google.maps.Marker;
 
-    const timeout = setTimeout(() => {
-      if (!selected && !mapError) {
-        setMapError('Map taking too long to load. Please check your connection.');
-      }
-    }, 10000);
+    const loadGoogleMaps = async () => {
+      try {
+        if (!window.google || !window.google.maps) {
+          const script = document.createElement('script');
+          script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
+          script.async = true;
+          script.defer = true;
+          document.head.appendChild(script);
 
-    Promise.all([
-      importLibrary('maps'),
-      importLibrary('marker'),
-      importLibrary('places')
-    ])
-      .then(async ([mapsLib, markerLib, placesLib]) => {
-        clearTimeout(timeout);
+          await new Promise((resolve, reject) => {
+            script.onload = resolve;
+            script.onerror = () => reject(new Error('Google Maps failed to load'));
+          });
+        }
+
         if (!mapRef.current) return;
 
-        try {
-          const MapClass = (mapsLib as any).Map;
-          const MarkerClass = (markerLib as any).Marker || (markerLib as any).AdvancedMarkerElement;
-          const AutocompleteClass = (placesLib as any).Autocomplete;
+        const center = initialCenter || { lat: 21.2514, lng: 81.6296 };
 
-          if (!MapClass || !MarkerClass) {
-            throw new Error('Required Google Maps components failed to load');
-          }
+        map = new google.maps.Map(mapRef.current, {
+          center,
+          zoom: 15,
+          mapTypeControl: false,
+          streetViewControl: false,
+          fullscreenControl: false,
+          restriction: {
+            latLngBounds: RAIPUR_BOUNDS,
+            strictBounds: false,
+          },
+        });
 
-          const center = initialCenter || { lat: 21.2514, lng: 81.6296 };
+        marker = new google.maps.Marker({
+          position: center,
+          map,
+          draggable: true,
+        });
 
-          const map = new MapClass(mapRef.current, {
-            center,
-            zoom: 15,
-            mapTypeControl: false,
-            streetViewControl: false,
-            fullscreenControl: false,
-            restriction: {
-              latLngBounds: RAIPUR_BOUNDS,
-              strictBounds: true,
-            },
+        setSelected(center);
+        setLoading(false);
+
+        map.addListener('click', (e: google.maps.MapMouseEvent) => {
+          if (!e.latLng) return;
+          const coords = e.latLng.toJSON();
+          marker.setPosition(coords);
+          setSelected(coords);
+        });
+
+        marker.addListener('dragend', () => {
+          const pos = marker.getPosition();
+          if (!pos) return;
+          setSelected({ lat: pos.lat(), lng: pos.lng() });
+        });
+
+        // AUTOCOMPLETE (safe)
+        if (searchInputRef.current && google.maps.places) {
+          const autocomplete = new google.maps.places.Autocomplete(searchInputRef.current, {
+            componentRestrictions: { country: 'in' },
+            fields: ['formatted_address', 'geometry', 'name'],
+            types: ['geocode'],
           });
 
-          const marker = new MarkerClass({
-            position: center,
-            map,
-            draggable: true,
-          });
+          autocomplete.addListener('place_changed', () => {
+            const place = autocomplete.getPlace();
+            if (!place.geometry || !place.geometry.location) return;
 
-          setSelected(center);
+            const coords = {
+              lat: place.geometry.location.lat(),
+              lng: place.geometry.location.lng(),
+            };
 
-          const updateMarkerPos = (pos: { lat: number; lng: number }) => {
-            if (marker.setPosition) marker.setPosition(pos);
-            else marker.position = pos;
-          };
-
-          const getMarkerPos = () => {
-            if (marker.getPosition) {
-              const p = marker.getPosition();
-              return { lat: p.lat(), lng: p.lng() };
-            }
-            return marker.position;
-          };
-
-          map.addListener('click', (e: any) => {
-            if (!e.latLng) return;
-            const coords = { lat: e.latLng.lat(), lng: e.latLng.lng() };
-            updateMarkerPos(coords);
+            marker.setPosition(coords);
+            map.setCenter(coords);
+            map.setZoom(17);
             setSelected(coords);
+            setSearchQuery(place.formatted_address || place.name || '');
           });
-
-          marker.addListener('dragend', () => {
-            const coords = getMarkerPos();
-            if (coords) setSelected(coords);
-          });
-
-          // Autocomplete
-          if (searchInputRef.current && AutocompleteClass) {
-            const autocomplete = new AutocompleteClass(searchInputRef.current, {
-              componentRestrictions: { country: 'in' },
-              fields: ['formatted_address', 'geometry', 'name'],
-              types: ['geocode', 'establishment'],
-              bounds: RAIPUR_BOUNDS
-            });
-
-            autocomplete.addListener('place_changed', () => {
-              const place = autocomplete.getPlace();
-              if (!place.geometry || !place.geometry.location) return;
-
-              const newCoords = {
-                lat: place.geometry.location.lat(),
-                lng: place.geometry.location.lng()
-              };
-              setSelected(newCoords);
-              map.setCenter(newCoords);
-              map.setZoom(17);
-              marker.setPosition(newCoords);
-              setSearchQuery(place.formatted_address || place.name || '');
-            });
-          }
-        } catch (err) {
-          console.error('Error initializing map details:', err);
-          setMapError('Something went wrong initializing the map. Please try again.');
         }
-      })
-      .catch((err) => {
-        clearTimeout(timeout);
-        console.error('Google Maps failed:', err);
-        setMapError('Failed to load Google Maps. Please try again later.');
-      });
+      } catch (err: any) {
+        console.error('MAP LOAD ERROR:', err);
+        setMapError('Failed to load map');
+        setLoading(false);
+      }
+    };
+
+    loadGoogleMaps();
   }, [initialCenter]);
 
   return (
-    <div className="fixed inset-0 z-[110] bg-white flex flex-col">
-      <div className="p-4 flex items-center justify-between border-b">
+    <div className="fixed inset-0 z-[120] bg-white flex flex-col">
+      <div className="p-4 border-b flex justify-between items-center">
         <div className="flex items-center gap-2">
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
             <X className="w-5 h-5" />
@@ -153,47 +131,42 @@ export default function MapSelector({ onSelect, onClose, initialCenter }: MapSel
           onClick={() => selected && onSelect(selected.lat, selected.lng)}
           className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 disabled:opacity-50"
         >
-          <Check className="w-4 h-4" /> Confirm
+          <Check className="w-4 h-4" />
+          Confirm
         </button>
       </div>
 
-      <div className="p-3 bg-white border-b sticky top-0 z-20">
+      {/* SEARCH BAR */}
+      <div className="p-3 border-b bg-white">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             ref={searchInputRef}
-            type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search address in Raipur..."
-            className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+            placeholder="Search address..."
+            className="w-full pl-10 pr-4 py-2.5 bg-gray-100 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20"
           />
         </div>
       </div>
 
-      <div ref={mapRef} className="flex-1 bg-gray-50 flex items-center justify-center relative">
-        {mapError && (
-          <div className="absolute inset-0 z-10 bg-white/90 flex flex-col items-center justify-center p-6 text-center">
-            <p className="text-red-500 font-medium mb-4">{mapError}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-bold"
-            >
-              Retry
-            </button>
-          </div>
-        )}
-        {!selected && !mapError && (
+      {/* MAP */}
+      <div ref={mapRef} className="flex-1 bg-gray-50 flex items-center justify-center">
+        {loading && !mapError && (
           <div className="flex flex-col items-center gap-2">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <p className="text-sm text-gray-500">Loading map...</p>
           </div>
         )}
+
+        {mapError && (
+          <p className="text-red-500 font-medium">{mapError}</p>
+        )}
       </div>
 
       <div className="p-4 border-t text-sm text-gray-600 flex items-center gap-2">
         <MapPin className="w-4 h-4 text-primary" />
-        Drag marker or tap map to select accurate location.
+        Tap map or drag marker to select exact location.
       </div>
     </div>
   );
