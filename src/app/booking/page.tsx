@@ -28,6 +28,42 @@ function BookingContent() {
     const [time, setTime] = useState('');
     const [notes, setNotes] = useState('');
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [isLoadedFromStorage, setIsLoadedFromStorage] = useState(false);
+
+    useEffect(() => {
+      const saved = localStorage.getItem('ua_booking_draft');
+      if (saved) {
+        try {
+          const draft = JSON.parse(saved);
+          if (draft.selectedServices?.length > 0 && !serviceId) {
+             setSelectedServices(draft.selectedServices);
+          }
+          setVehicleType(draft.vehicleType || '');
+          setVehicleNumber(draft.vehicleNumber || '');
+          setVehicleMakeModel(draft.vehicleMakeModel || '');
+          setServiceMode(draft.serviceMode || 'Pickup & Drop');
+          setDate(draft.date || '');
+          setTime(draft.time || '');
+          setNotes(draft.notes || '');
+        } catch {}
+      }
+      setIsLoadedFromStorage(true);
+    }, [serviceId]);
+
+    useEffect(() => {
+      if (!isLoadedFromStorage) return;
+      const draft = {
+        selectedServices,
+        vehicleType,
+        vehicleNumber,
+        vehicleMakeModel,
+        serviceMode,
+        date,
+        time,
+        notes,
+      };
+      localStorage.setItem('ua_booking_draft', JSON.stringify(draft));
+    }, [selectedServices, vehicleType, vehicleNumber, vehicleMakeModel, serviceMode, date, time, notes, isLoadedFromStorage]);
     const [dbPrices, setDbPrices] = useState<Record<string, any>>({});
     const [pricesLoaded, setPricesLoaded] = useState(false);
 
@@ -145,13 +181,15 @@ function BookingContent() {
       router.push('/booking/summary');
     };
 
-  if (isLoading || !user) {
+  if (isLoading && !user) {
     return (
       <div className="mobile-container flex items-center justify-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
+
+  if (!user) return null;
 
   return (
     <div className="mobile-container bg-gray-50 min-h-screen pb-10">

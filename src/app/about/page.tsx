@@ -14,17 +14,19 @@ export default function AboutPage() {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.replace('/signup');
+      router.replace('/login');
     }
   }, [isLoading, user, router]);
 
-  if (isLoading || !user) {
+  if (isLoading && !user) {
     return (
       <div className="mobile-container flex items-center justify-center min-h-screen">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
+
+  if (!user) return null;
 
   const features = [
     { icon: Zap, title: 'High-Pressure Cleaning', desc: 'Advanced machines for deep cleaning' },

@@ -244,12 +244,18 @@ export default function UserDetailPage() {
     }
   };
 
-  if (isLoading || loading) return (
+  if (isLoading && !user) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <Loader2 className="w-8 h-8 animate-spin text-primary" />
     </div>
   );
-  if (!user || !isAdmin || !profile) return null;
+  if (!user || !isAdmin || !profile || loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const totalSpent = bookings.filter(b => b.payment_status === 'paid').reduce((sum, b) => sum + (b.total_amount || 0), 0);
 

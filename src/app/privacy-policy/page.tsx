@@ -1,16 +1,20 @@
-import Link from 'next/link';
+'use client';
+
+import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 
 export default function PrivacyPolicyPage() {
+  const router = useRouter();
+
   return (
     <div className="mobile-container bg-white min-h-screen flex flex-col p-6">
-      <Link 
-        href="/signup"
-        className="flex items-center gap-2 text-gray-600 mb-8 hover:text-primary transition-colors"
+      <button
+        onClick={() => router.back()}
+        className="flex items-center gap-2 text-gray-600 mb-8 hover:text-primary transition-colors w-fit"
       >
         <ArrowLeft size={20} />
         <span>Back</span>
-      </Link>
+      </button>
 
       <h1 className="text-3xl font-bold text-gray-900 mb-6">Urban Auto Privacy Policy</h1>
       

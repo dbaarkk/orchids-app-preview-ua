@@ -32,9 +32,19 @@ export const NativeLocationPicker: React.FC<NativeLocationPickerProps> = ({ onAd
     };
 
     const startFetchingLocation = async () => {
+      const cached = localStorage.getItem('ua_last_fetched_address_full');
+      if (cached) {
+        try {
+          const data = JSON.parse(cached);
+          setAddressData(data);
+          return;
+        } catch {}
+      }
+
       const data = await getCurrentLocation();
       if (data) {
         setAddressData(data);
+        localStorage.setItem('ua_last_fetched_address_full', JSON.stringify(data));
       }
     };
 

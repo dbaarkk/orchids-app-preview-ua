@@ -5,26 +5,28 @@ import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/lib/auth-context';
 import { getAssetPath } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 export default function SplashScreen() {
   const { user, isLoading, isAdmin } = useAuth();
   const [minDelayDone, setMinDelayDone] = useState(false);
   const [redirected, setRedirected] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    const timer = setTimeout(() => setMinDelayDone(true), 1500);
+    const timer = setTimeout(() => setMinDelayDone(true), 1000);
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     const fallback = setTimeout(() => {
-      if (!redirected) {
+      if (!redirected && !isLoading) {
         setRedirected(true);
-        window.location.href = '/login';
+        router.replace('/login');
       }
     }, 5000);
     return () => clearTimeout(fallback);
-  }, [redirected]);
+  }, [redirected, isLoading, router]);
 
   useEffect(() => {
     if (!minDelayDone || redirected) return;
@@ -32,11 +34,11 @@ export default function SplashScreen() {
 
     setRedirected(true);
     if (user) {
-      window.location.href = isAdmin ? '/admin' : '/home';
+      router.replace(isAdmin ? '/admin' : '/home');
     } else {
-      window.location.href = '/login';
+      router.replace('/login');
     }
-  }, [minDelayDone, isLoading, user, isAdmin, redirected]);
+  }, [minDelayDone, isLoading, user, isAdmin, redirected, router]);
 
   return (
     <div className="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center">

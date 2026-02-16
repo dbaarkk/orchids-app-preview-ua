@@ -93,7 +93,15 @@ export default function BookingSummaryPage() {
     el.scrollBy({ left: dir === 'left' ? -200 : 200, behavior: 'smooth' });
   };
 
-  if (isLoading || !user || !summaryData) {
+  if (isLoading && !user) {
+    return (
+      <div className="mobile-container flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user || !summaryData) {
     return (
       <div className="mobile-container flex items-center justify-center min-h-screen">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -227,6 +235,7 @@ export default function BookingSummaryPage() {
           if (result.success) {
             setBookingDone(true);
             sessionStorage.removeItem('bookingSummary');
+            localStorage.removeItem('ua_booking_draft');
             await refreshUser();
 
             toast.success('Payment successful! Booking confirmed.');
@@ -264,6 +273,7 @@ export default function BookingSummaryPage() {
         if (result.success) {
           setBookingDone(true);
           sessionStorage.removeItem('bookingSummary');
+          localStorage.removeItem('ua_booking_draft');
           toast.success('Booking confirmed!');
           router.replace('/bookings');
       } else {

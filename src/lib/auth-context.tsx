@@ -141,9 +141,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const userRef = useRef<User | null>(null);
-    useEffect(() => {
-      userRef.current = user;
-    }, [user]);
+
+  useEffect(() => {
+    userRef.current = user;
+    if (user) {
+      localStorage.setItem('ua_cached_user', JSON.stringify(user));
+    } else if (!isLoading) {
+      localStorage.removeItem('ua_cached_user');
+    }
+  }, [user, isLoading]);
 
   useEffect(() => {
     let mounted = true;
@@ -171,14 +177,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
 
       const init = async () => {
+          // Load from cache first
+          const cached = localStorage.getItem('ua_cached_user');
+          if (cached) {
+            try {
+              const u = JSON.parse(cached);
+              setUser(u);
+              userRef.current = u;
+            } catch {}
+          }
+
           try {
-            const sessionPromise = supabase.auth.getSession();
-            const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
-            const result = await Promise.race([sessionPromise, timeoutPromise]);
+            const { data: { session } } = await supabase.auth.getSession();
             if (!mounted) return;
-            const session = result && 'data' in result ? result.data.session : null;
             if (session?.user) {
               await loadUser(session.user.id, session.user.email, session.user.user_metadata);
+            } else {
+              setUser(null);
+              userRef.current = null;
             }
           } catch {}
           if (mounted) setIsLoading(false);

@@ -8,13 +8,15 @@ export default function AddMoneyPage() {
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-  if (isLoading || !user) {
+  if (isLoading && !user) {
     return (
       <div className="mobile-container flex items-center justify-center min-h-screen bg-white">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
       </div>
     );
   }
+
+  if (!user) return null;
 
   const balance = user.walletBalance ?? 0;
 

@@ -330,7 +330,7 @@ export default function AdminPanel() {
     cancelled: bookings.filter(b => b.status === 'Cancelled').length,
   };
 
-  if (isLoading) return (
+  if (isLoading && !user) return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
       <Loader2 className="w-8 h-8 animate-spin text-primary" />
     </div>
