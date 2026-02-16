@@ -16,6 +16,12 @@ interface MapSelectorProps {
   initialCenter?: { lat: number; lng: number };
 }
 
+declare global {
+  interface Window {
+    google: any;
+  }
+}
+
 export default function MapSelector({ onSelect, onClose, initialCenter }: MapSelectorProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -29,20 +35,39 @@ export default function MapSelector({ onSelect, onClose, initialCenter }: MapSel
     let map: google.maps.Map;
     let marker: google.maps.Marker;
 
-    const loadGoogleMaps = async () => {
-      try {
-        if (!window.google || !window.google.maps) {
-          const script = document.createElement('script');
-          script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
-          script.async = true;
-          script.defer = true;
-          document.head.appendChild(script);
+    const waitForGoogle = () =>
+      new Promise<void>((resolve, reject) => {
+        let attempts = 0;
+        const interval = setInterval(() => {
+          if (window.google && window.google.maps) {
+            clearInterval(interval);
+            resolve();
+          } else if (attempts > 40) {
+            clearInterval(interval);
+            reject(new Error('Google Maps not available'));
+          }
+          attempts++;
+        }, 250);
+      });
 
-          await new Promise((resolve, reject) => {
-            script.onload = resolve;
-            script.onerror = () => reject(new Error('Google Maps failed to load'));
-          });
-        }
+    const loadScriptOnce = async () => {
+      if (window.google?.maps) return;
+
+      if (!document.querySelector('#google-maps-script')) {
+        const script = document.createElement('script');
+        script.id = 'google-maps-script';
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&libraries=places`;
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+      }
+
+      await waitForGoogle();
+    };
+
+    const initMap = async () => {
+      try {
+        await loadScriptOnce();
 
         if (!mapRef.current) return;
 
@@ -82,7 +107,7 @@ export default function MapSelector({ onSelect, onClose, initialCenter }: MapSel
           setSelected({ lat: pos.lat(), lng: pos.lng() });
         });
 
-        // AUTOCOMPLETE (safe)
+        // Safe autocomplete
         if (searchInputRef.current && google.maps.places) {
           const autocomplete = new google.maps.places.Autocomplete(searchInputRef.current, {
             componentRestrictions: { country: 'in' },
@@ -106,14 +131,14 @@ export default function MapSelector({ onSelect, onClose, initialCenter }: MapSel
             setSearchQuery(place.formatted_address || place.name || '');
           });
         }
-      } catch (err: any) {
-        console.error('MAP LOAD ERROR:', err);
+      } catch (err) {
+        console.error('MAP CRASH:', err);
         setMapError('Failed to load map');
         setLoading(false);
       }
     };
 
-    loadGoogleMaps();
+    initMap();
   }, [initialCenter]);
 
   return (
@@ -136,7 +161,7 @@ export default function MapSelector({ onSelect, onClose, initialCenter }: MapSel
         </button>
       </div>
 
-      {/* SEARCH BAR */}
+      {/* SEARCH */}
       <div className="p-3 border-b bg-white">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -159,9 +184,7 @@ export default function MapSelector({ onSelect, onClose, initialCenter }: MapSel
           </div>
         )}
 
-        {mapError && (
-          <p className="text-red-500 font-medium">{mapError}</p>
-        )}
+        {mapError && <p className="text-red-500 font-medium">{mapError}</p>}
       </div>
 
       <div className="p-4 border-t text-sm text-gray-600 flex items-center gap-2">
