@@ -314,64 +314,81 @@ export default function LoginPage() {
       <p className="text-gray-500 text-sm mb-8 text-center">Login to your Urban Auto account</p>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <div>
-          <div>
-  <label className="text-sm font-medium text-gray-700 mb-1.5 block">Enter your email or phone</label>
-  <input
-    type="text"
-    value={identifier}
-    onChange={(e) => setIdentifier(e.target.value)}
-    placeholder="Enter your email or phone"
-    className={`w-full px-4 py-4 rounded-xl border ${errors.identifier ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm font-medium placeholder:text-gray-400`}
-  />
-  {errors.identifier && <p className="text-red-500 text-xs mt-1">{errors.identifier}</p>}
-</div>
+  <div>
+    <label className="text-sm font-medium text-gray-700 mb-1.5 block">
+      Enter your email or phone
+    </label>
 
-        <div>
-          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Password</label>
-          <div className="relative">
-            <input
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              className={`w-full px-4 py-3.5 rounded-xl border ${errors.password ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm pr-11`}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-            >
-              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-            </button>
-          </div>
-          {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
-        </div>
+    <input
+      type="text"
+      value={identifier}
+      onChange={(e) => setIdentifier(e.target.value)}
+      placeholder="Enter your email or phone"
+      className={`w-full px-4 py-4 rounded-xl border ${
+        errors.identifier ? 'border-red-400' : 'border-gray-200'
+      } bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm font-medium placeholder:text-gray-400`}
+    />
 
-        <div className="flex justify-between items-center -mt-1">
-          <button
-            type="button"
-            onClick={handleLoginWithOtp}
-            disabled={otpSending}
-            className="text-xs text-primary font-semibold hover:underline disabled:opacity-50 flex items-center gap-1.5"
-          >
-            {otpSending && <Loader2 className="w-3 h-3 animate-spin" />}
-            Login with OTP
-          </button>
-          <Link href="/forgot-password" className="text-xs text-primary font-medium hover:underline">
-            Forgot Password?
-          </Link>
-        </div>
+    {errors.identifier && (
+      <p className="text-red-500 text-xs mt-1">{errors.identifier}</p>
+    )}
+  </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-primary text-white py-4 rounded-xl font-bold text-sm mt-2 hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-60 flex items-center justify-center gap-2 active:scale-[0.98]"
-        >
-          {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
-      </form>
+  <div>
+    <label className="text-sm font-medium text-gray-700 mb-1.5 block">
+      Password
+    </label>
+
+    <div className="relative">
+      <input
+        type={showPassword ? 'text' : 'password'}
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+        placeholder="Enter your password"
+        className={`w-full px-4 py-3.5 rounded-xl border ${
+          errors.password ? 'border-red-400' : 'border-gray-200'
+        } bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm pr-11`}
+      />
+
+      <button
+        type="button"
+        onClick={() => setShowPassword(!showPassword)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+      >
+        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+      </button>
+    </div>
+
+    {errors.password && (
+      <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+    )}
+  </div>
+
+  <div className="flex justify-between items-center -mt-1">
+    <button
+      type="button"
+      onClick={handleLoginWithOtp}
+      disabled={otpSending}
+      className="text-xs text-primary font-semibold hover:underline disabled:opacity-50 flex items-center gap-1.5"
+    >
+      {otpSending && <Loader2 className="w-3 h-3 animate-spin" />}
+      Login with OTP
+    </button>
+
+    <Link href="/forgot-password" className="text-xs text-primary font-medium hover:underline">
+      Forgot Password?
+    </Link>
+  </div>
+
+  <button
+    type="submit"
+    disabled={loading}
+    className="w-full bg-primary text-white py-4 rounded-xl font-bold text-sm mt-2 hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-60 flex items-center justify-center gap-2 active:scale-[0.98]"
+  >
+    {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+    {loading ? 'Logging in...' : 'Login'}
+  </button>
+</form>
 
       <p className="text-center text-sm text-gray-500 mt-8">
         Don&apos;t have an account?{' '}
