@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Loader2, MapPin, Map as MapIcon, Navigation } from 'lucide-react';
+import { X, Loader2, MapPin, Navigation } from 'lucide-react';
 import { UserAddress } from '@/lib/auth-context';
 import { getAccurateLocation, reverseGeocode } from '@/lib/location';
-import MapSelector from './MapSelector';
 import { toast } from 'sonner';
 
 interface AddressFormProps {
@@ -29,7 +28,6 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
   }, [initialAddress]);
   const [saving, setSaving] = useState(false);
   const [fetching, setFetching] = useState(false);
-  const [showMap, setShowMap] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -58,20 +56,6 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
     setFetching(false);
   };
 
-  const handleMapSelect = async (lat: number, lng: number) => {
-    setShowMap(false);
-    setFetching(true);
-    try {
-      setCoords({ lat, lng });
-      const addr = await reverseGeocode(lat, lng);
-      setLine1(addr.line1);
-      if (addr.pincode) setPincode(addr.pincode);
-      toast.success('Location selected from map');
-    } catch (err) {
-      toast.error('Failed to get address from selected point');
-    }
-    setFetching(false);
-  };
 
   const validate = () => {
     const errs: Record<string, string> = {};
@@ -181,12 +165,6 @@ export default function AddressForm({ onSave, onClose, initialAddress }: Address
           </div>
       </div>
 
-      {showMap && (
-        <MapSelector
-          onClose={() => setShowMap(false)}
-          onSelect={handleMapSelect}
-        />
-      )}
 
       <div className="p-4 bg-white border-t border-gray-100 pb-8 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
         <button

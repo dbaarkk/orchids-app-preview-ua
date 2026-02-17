@@ -64,16 +64,8 @@ export default function AddMoneyPage() {
             <p className="text-xs text-gray-500">Scan QR code to pay via any UPI app</p>
           </div>
 
-          <div className="relative aspect-square max-w-[240px] mx-auto mb-6 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden">
-            {config?.payment_config?.qr_code_url ? (
-              <img src={config.payment_config.qr_code_url} alt="Payment QR" className="w-full h-full object-contain p-2" />
-            ) : (
-              <QrCode className="w-20 h-20 text-gray-200" />
-            )}
-          </div>
-
           {config?.payment_config?.upi_id && (
-            <div className="mb-8">
+            <div className="mb-6">
               <p className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">UPI ID</p>
               <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
                 <span className="flex-1 text-sm font-semibold text-gray-700 truncate">{config.payment_config.upi_id}</span>
@@ -83,6 +75,14 @@ export default function AddMoneyPage() {
               </div>
             </div>
           )}
+
+          <div className="relative aspect-square max-w-[240px] mx-auto mb-8 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden">
+            {config?.payment_config?.qr_code_url ? (
+              <img src={config.payment_config.qr_code_url} alt="Payment QR" className="w-full h-full object-contain p-2" />
+            ) : (
+              <QrCode className="w-20 h-20 text-gray-200" />
+            )}
+          </div>
 
           <div className="bg-primary/5 rounded-xl p-4 mb-6 border border-primary/10">
             <p className="text-xs font-bold text-primary text-center">Share screenshot after paying</p>

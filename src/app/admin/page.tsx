@@ -128,7 +128,8 @@ export default function AdminPanel() {
   const [notificationContent, setNotificationContent] = useState('');
   const [pushingNotification, setPushingNotification] = useState(false);
 
-  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [showCarouselModal, setShowCarouselModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [configLoading, setConfigLoading] = useState(false);
   const [appConfig, setAppConfig] = useState<any>({});
   const [newCarouselUrl, setNewCarouselUrl] = useState('');
@@ -145,8 +146,8 @@ export default function AdminPanel() {
   }, []);
 
   useEffect(() => {
-    if (isAdmin && showConfigModal) fetchConfig();
-  }, [isAdmin, showConfigModal, fetchConfig]);
+    if (isAdmin && (showCarouselModal || showPaymentModal)) fetchConfig();
+  }, [isAdmin, showCarouselModal, showPaymentModal, fetchConfig]);
 
   useEffect(() => {
     if (!isLoading && !loggingOut && (!user || !isAdmin)) {
@@ -420,8 +421,11 @@ export default function AdminPanel() {
             <button onClick={() => setShowNotificationModal(true)} className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors" title="Push Notification">
               <Bell className="w-5 h-5" />
             </button>
-            <button onClick={() => setActiveTab('coupons')} className={`p-2 rounded-full hover:bg-white/30 transition-colors ${activeTab === 'coupons' ? 'bg-white/30' : 'bg-white/20'}`} title="Coupons">
-              <Ticket className="w-5 h-5" />
+            <button onClick={() => setShowCarouselModal(true)} className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors" title="Signup Carousel">
+              <ImageIcon className="w-5 h-5" />
+            </button>
+            <button onClick={() => setShowPaymentModal(true)} className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors" title="Payment Details">
+              <QrCode className="w-5 h-5" />
             </button>
             <button onClick={() => setShowPasswordModal(true)} className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors" title="Reset Password">
               <KeyRound className="w-5 h-5" />
@@ -939,81 +943,90 @@ export default function AdminPanel() {
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {showConfigModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setShowConfigModal(false)}>
+        {showCarouselModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setShowCarouselModal(false)}>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white rounded-2xl p-6 w-full max-w-md my-8" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-gray-900">App Configuration</h3>
-                <button onClick={() => setShowConfigModal(false)} className="p-1"><X className="w-5 h-5 text-gray-400" /></button>
+                <h3 className="text-lg font-bold text-gray-900">Signup Carousel</h3>
+                <button onClick={() => setShowCarouselModal(false)} className="p-1"><X className="w-5 h-5 text-gray-400" /></button>
               </div>
 
-              <div className="space-y-6">
-                {/* Carousel Images */}
-                <div className="space-y-3">
-                  <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                    <ImageIcon className="w-4 h-4" /> Signup Carousel Images
-                  </h4>
-                  <div className="flex gap-2">
-                    <input type="text" value={newCarouselUrl} onChange={(e) => setNewCarouselUrl(e.target.value)} placeholder="Image URL" className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none" />
-                    <button
-                      onClick={async () => {
-                        if (!newCarouselUrl) return;
-                        const current = appConfig.signup_carousel?.images || [];
-                        const updated = [...current, newCarouselUrl];
-                        await adminAction({ action: 'update-app-config', key: 'signup_carousel', value: { images: updated } });
-                        setNewCarouselUrl('');
-                        fetchConfig();
-                        toast.success('Image added');
-                      }}
-                      className="p-2 bg-primary text-white rounded-xl"
-                    >
-                      <Plus className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(appConfig.signup_carousel?.images || []).map((img: string, i: number) => (
-                      <div key={i} className="relative aspect-video rounded-lg overflow-hidden border border-gray-100 group">
-                        <img src={img} alt="" className="w-full h-full object-cover" />
-                        <button
-                          onClick={async () => {
-                            const updated = (appConfig.signup_carousel.images as string[]).filter((_, idx) => idx !== i);
-                            await adminAction({ action: 'update-app-config', key: 'signup_carousel', value: { images: updated } });
-                            fetchConfig();
-                          }}
-                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4" /> Signup Carousel Images
+                </h4>
+                <div className="flex gap-2">
+                  <input type="text" value={newCarouselUrl} onChange={(e) => setNewCarouselUrl(e.target.value)} placeholder="Image URL" className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none" />
+                  <button
+                    onClick={async () => {
+                      if (!newCarouselUrl) return;
+                      const current = appConfig.signup_carousel?.images || [];
+                      const updated = [...current, newCarouselUrl];
+                      await adminAction({ action: 'update-app-config', key: 'signup_carousel', value: { images: updated } });
+                      setNewCarouselUrl('');
+                      fetchConfig();
+                      toast.success('Image added');
+                    }}
+                    className="p-2 bg-primary text-white rounded-xl"
+                  >
+                    <Plus className="w-5 h-5" />
+                  </button>
                 </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {(appConfig.signup_carousel?.images || []).map((img: string, i: number) => (
+                    <div key={i} className="relative aspect-video rounded-lg overflow-hidden border border-gray-100 group">
+                      <img src={img} alt="" className="w-full h-full object-cover" />
+                      <button
+                        onClick={async () => {
+                          const updated = (appConfig.signup_carousel.images as string[]).filter((_, idx) => idx !== i);
+                          await adminAction({ action: 'update-app-config', key: 'signup_carousel', value: { images: updated } });
+                          fetchConfig();
+                        }}
+                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-                {/* Payment Config */}
-                <div className="space-y-3 pt-4 border-t border-gray-100">
-                  <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                    <QrCode className="w-4 h-4" /> Payment Details (UPI/QR)
-                  </h4>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="text-[10px] font-bold text-gray-500 uppercase">UPI ID</label>
-                      <input type="text" value={upiId} onChange={(e) => setUpiId(e.target.value)} placeholder="e.g. urbanauto@okaxis" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none mt-1" />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-gray-500 uppercase">QR Code Image URL</label>
-                      <input type="text" value={qrCodeUrl} onChange={(e) => setQrCodeUrl(e.target.value)} placeholder="Image URL" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none mt-1" />
-                    </div>
-                    <button
-                      onClick={async () => {
-                        await adminAction({ action: 'update-app-config', key: 'payment_config', value: { upi_id: upiId, qr_code_url: qrCodeUrl } });
-                        fetchConfig();
-                        toast.success('Payment config updated');
-                      }}
-                      className="w-full py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold"
-                    >
-                      Save Payment Config
-                    </button>
+      <AnimatePresence>
+        {showPaymentModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setShowPaymentModal(false)}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white rounded-2xl p-6 w-full max-w-md my-8" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-gray-900">Payment Details</h3>
+                <button onClick={() => setShowPaymentModal(false)} className="p-1"><X className="w-5 h-5 text-gray-400" /></button>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                  <QrCode className="w-4 h-4" /> UPI & QR Config
+                </h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-500 uppercase">UPI ID</label>
+                    <input type="text" value={upiId} onChange={(e) => setUpiId(e.target.value)} placeholder="e.g. urbanauto@okaxis" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none mt-1" />
                   </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-gray-500 uppercase">QR Code Image URL</label>
+                    <input type="text" value={qrCodeUrl} onChange={(e) => setQrCodeUrl(e.target.value)} placeholder="Image URL" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none mt-1" />
+                  </div>
+                  <button
+                    onClick={async () => {
+                      await adminAction({ action: 'update-app-config', key: 'payment_config', value: { upi_id: upiId, qr_code_url: qrCodeUrl } });
+                      fetchConfig();
+                      toast.success('Payment config updated');
+                    }}
+                    className="w-full py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold"
+                  >
+                    Save Payment Config
+                  </button>
                 </div>
               </div>
             </motion.div>
