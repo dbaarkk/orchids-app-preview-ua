@@ -2,12 +2,13 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAssetPath } from '@/lib/utils';
+import Carousel, { CarouselItem } from '@/components/Carousel';
 
 type Step = 'phone' | 'otp' | 'details';
 
@@ -67,6 +68,13 @@ export default function SignupPage() {
       return () => clearTimeout(t);
     }
   }, [resendTimer]);
+
+  const carouselItems: CarouselItem[] = useMemo(() => {
+    return carouselImages.map((img, i) => ({
+      id: i,
+      image: img
+    }));
+  }, [carouselImages]);
 
   if (isLoading || redirecting) {
     return (
@@ -239,40 +247,34 @@ export default function SignupPage() {
 
   const Logo = () => (
     <div className="flex flex-col items-center mb-8">
-      {carouselImages.length > 0 ? (
-        <div className="w-full aspect-[21/9] relative rounded-2xl overflow-hidden mb-6 shadow-lg bg-gray-100">
-          <AnimatePresence mode="wait">
-            <motion.img
-              key={currentSlide}
-              src={carouselImages[currentSlide]}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="w-full h-full object-cover"
-            />
-          </AnimatePresence>
-          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
-            {carouselImages.map((_, i) => (
-              <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentSlide ? 'bg-white w-4' : 'bg-white/50'}`} />
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="relative w-[80px] h-[80px] flex items-center justify-center">
-          <Image
-            src={getAssetPath('/urban-auto-logo.jpg')}
-            alt="Urban Auto"
-            width={80}
-            height={80}
-            className="rounded-xl shadow-md object-cover"
-            priority
-            unoptimized
-          />
-        </div>
-      )}
+      <div className="relative w-[80px] h-[80px] flex items-center justify-center">
+        <Image
+          src={getAssetPath('/urban-auto-logo.jpg')}
+          alt="Urban Auto"
+          width={80}
+          height={80}
+          className="rounded-xl shadow-md object-cover"
+          priority
+          unoptimized
+        />
+      </div>
       <h1 className="text-xl font-bold text-gray-900 mt-4">
         URBAN <span className="text-primary">AUTO</span>
       </h1>
+    </div>
+  );
+
+  const SignupCarousel = () => (
+    <div className="mt-8 mb-4" style={{ height: '600px', position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
+      <Carousel
+        items={carouselItems.length > 0 ? carouselItems : undefined}
+        baseWidth={300}
+        autoplay={true}
+        autoplayDelay={3000}
+        pauseOnHover={false}
+        loop={true}
+        round={false}
+      />
     </div>
   );
 
@@ -316,6 +318,8 @@ export default function SignupPage() {
           {otpVerifying && <Loader2 className="w-4 h-4 animate-spin" />}
           {otpVerifying ? 'Verifying...' : 'Verify Phone'}
         </button>
+
+        <SignupCarousel />
 
         <div className="text-center mt-4">
           {resendTimer > 0 ? (
@@ -419,6 +423,8 @@ export default function SignupPage() {
           </button>
         </form>
 
+        <SignupCarousel />
+
         <p className="text-center text-sm text-gray-500 mt-6">
           Already have an account?{' '}
           <Link href="/login" className="text-primary font-semibold hover:underline">
@@ -468,6 +474,8 @@ export default function SignupPage() {
           {otpSending ? 'Sending OTP...' : 'Send OTP'}
         </button>
       </form>
+
+      <SignupCarousel />
 
       <p className="text-center text-sm text-gray-500 mt-6">
         Already have an account?{' '}

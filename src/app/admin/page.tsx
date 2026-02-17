@@ -2,8 +2,8 @@
 
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
-import { LogOut, Check, RefreshCw, ChevronDown, ChevronUp, User, Phone, Mail, MapPin, Car, FileText, Calendar, Loader2, Copy, Users, CalendarDays, KeyRound, Eye, EyeOff, X, ShieldCheck, IndianRupee, Wrench, AlertTriangle, Truck, Home, Search, Ticket, Plus, Trash2, ToggleLeft, ToggleRight, ChevronRight, Bell, Settings, Image as ImageIcon, QrCode, MessageSquare } from 'lucide-react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { LogOut, Check, RefreshCw, ChevronDown, ChevronUp, User, Phone, Mail, MapPin, Car, FileText, Calendar, Loader2, Copy, Users, CalendarDays, KeyRound, Eye, EyeOff, X, ShieldCheck, IndianRupee, Wrench, AlertTriangle, Truck, Home, Search, Ticket, Plus, Trash2, ToggleLeft, ToggleRight, ChevronRight, Bell, Settings, Image as ImageIcon, QrCode, MessageSquare, Upload } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
@@ -135,6 +135,27 @@ export default function AdminPanel() {
   const [newCarouselUrl, setNewCarouselUrl] = useState('');
   const [upiId, setUpiId] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const carouselFileRef = useRef<HTMLInputElement>(null);
+  const qrFileRef = useRef<HTMLInputElement>(null);
+
+  const uploadImage = async (file: File, folder: string) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `${folder}/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('app-assets')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('app-assets')
+      .getPublicUrl(filePath);
+
+    return publicUrl;
+  };
 
   const fetchConfig = useCallback(async () => {
     try {
@@ -955,22 +976,66 @@ export default function AdminPanel() {
                 <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
                   <ImageIcon className="w-4 h-4" /> Signup Carousel Images
                 </h4>
-                <div className="flex gap-2">
-                  <input type="text" value={newCarouselUrl} onChange={(e) => setNewCarouselUrl(e.target.value)} placeholder="Image URL" className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none" />
-                  <button
-                    onClick={async () => {
-                      if (!newCarouselUrl) return;
-                      const current = appConfig.signup_carousel?.images || [];
-                      const updated = [...current, newCarouselUrl];
-                      await adminAction({ action: 'update-app-config', key: 'signup_carousel', value: { images: updated } });
-                      setNewCarouselUrl('');
-                      fetchConfig();
-                      toast.success('Image added');
-                    }}
-                    className="p-2 bg-primary text-white rounded-xl"
-                  >
-                    <Plus className="w-5 h-5" />
-                  </button>
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <input type="text" value={newCarouselUrl} onChange={(e) => setNewCarouselUrl(e.target.value)} placeholder="Image URL" className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none" />
+                    <button
+                      onClick={async () => {
+                        if (!newCarouselUrl) return;
+                        setUploading(true);
+                        try {
+                          const current = appConfig.signup_carousel?.images || [];
+                          const updated = [...current, newCarouselUrl];
+                          await adminAction({ action: 'update-app-config', key: 'signup_carousel', value: { images: updated } });
+                          setNewCarouselUrl('');
+                          fetchConfig();
+                          toast.success('Image added');
+                        } catch (err: any) {
+                          toast.error(err.message || 'Failed to add image');
+                        } finally {
+                          setUploading(false);
+                        }
+                      }}
+                      disabled={uploading}
+                      className="p-2 bg-primary text-white rounded-xl disabled:opacity-60"
+                    >
+                      {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Plus className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      ref={carouselFileRef}
+                      className="hidden"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploading(true);
+                        try {
+                          const url = await uploadImage(file, 'carousel');
+                          const current = appConfig.signup_carousel?.images || [];
+                          const updated = [...current, url];
+                          await adminAction({ action: 'update-app-config', key: 'signup_carousel', value: { images: updated } });
+                          fetchConfig();
+                          toast.success('Image uploaded and added');
+                        } catch (err: any) {
+                          toast.error(err.message || 'Upload failed');
+                        } finally {
+                          setUploading(false);
+                          if (carouselFileRef.current) carouselFileRef.current.value = '';
+                        }
+                      }}
+                    />
+                    <button
+                      onClick={() => carouselFileRef.current?.click()}
+                      disabled={uploading}
+                      className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-xl text-xs font-bold flex items-center justify-center gap-2 hover:bg-gray-200 transition-colors disabled:opacity-60"
+                    >
+                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      Upload from Device
+                    </button>
+                  </div>
                 </div>
                 <div className="grid grid-cols-3 gap-2">
                   {(appConfig.signup_carousel?.images || []).map((img: string, i: number) => (
@@ -1015,16 +1080,56 @@ export default function AdminPanel() {
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-gray-500 uppercase">QR Code Image URL</label>
-                    <input type="text" value={qrCodeUrl} onChange={(e) => setQrCodeUrl(e.target.value)} placeholder="Image URL" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none mt-1" />
+                    <div className="flex gap-2 mt-1">
+                      <input type="text" value={qrCodeUrl} onChange={(e) => setQrCodeUrl(e.target.value)} placeholder="Image URL" className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none" />
+                      <input
+                        type="file"
+                        ref={qrFileRef}
+                        className="hidden"
+                        accept="image/*"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setUploading(true);
+                          try {
+                            const url = await uploadImage(file, 'payments');
+                            setQrCodeUrl(url);
+                            toast.success('QR Code uploaded');
+                          } catch (err: any) {
+                            toast.error(err.message || 'Upload failed');
+                          } finally {
+                            setUploading(false);
+                            if (qrFileRef.current) qrFileRef.current.value = '';
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={() => qrFileRef.current?.click()}
+                        disabled={uploading}
+                        className="p-2 bg-gray-100 text-gray-700 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-60"
+                        title="Upload QR Code"
+                      >
+                        {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                      </button>
+                    </div>
                   </div>
                   <button
                     onClick={async () => {
-                      await adminAction({ action: 'update-app-config', key: 'payment_config', value: { upi_id: upiId, qr_code_url: qrCodeUrl } });
-                      fetchConfig();
-                      toast.success('Payment config updated');
+                      setUploading(true);
+                      try {
+                        await adminAction({ action: 'update-app-config', key: 'payment_config', value: { upi_id: upiId, qr_code_url: qrCodeUrl } });
+                        fetchConfig();
+                        toast.success('Payment config updated');
+                      } catch (err: any) {
+                        toast.error(err.message || 'Update failed');
+                      } finally {
+                        setUploading(false);
+                      }
                     }}
-                    className="w-full py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold"
+                    disabled={uploading}
+                    className="w-full py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold disabled:opacity-60 flex items-center justify-center gap-2"
                   >
+                    {uploading && <Loader2 className="w-4 h-4 animate-spin" />}
                     Save Payment Config
                   </button>
                 </div>
