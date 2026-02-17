@@ -315,7 +315,7 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div>
-          <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">Enter your email or phone</label>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Enter your email or phone</label>
           <input
             type="text"
             value={identifier}
