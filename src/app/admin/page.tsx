@@ -1043,13 +1043,14 @@ export default function AdminPanel() {
                       <img src={img} alt="" className="w-full h-full object-cover" />
                       <button
                         onClick={async () => {
+                          if (!confirm('Delete this carousel image?')) return;
                           const updated = (appConfig.signup_carousel.images as string[]).filter((_, idx) => idx !== i);
                           await adminAction({ action: 'update-app-config', key: 'signup_carousel', value: { images: updated } });
                           fetchConfig();
                         }}
-                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-full shadow-md z-10"
                       >
-                        <X className="w-3 h-3" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   ))}

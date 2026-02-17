@@ -40,7 +40,7 @@ interface CarouselItemProps {
 
 function CarouselItem({ item, index, itemWidth, round, trackItemOffset, x, transition }: CarouselItemProps) {
   const range = [-(index + 1) * trackItemOffset, -index * trackItemOffset, -(index - 1) * trackItemOffset];
-  const outputRange = [90, 0, -90];
+  const outputRange = [15, 0, -15];
   const rotateY = useTransform(x, range, outputRange, { clamp: false });
 
   return (

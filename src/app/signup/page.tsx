@@ -34,16 +34,6 @@ export default function SignupPage() {
   const router = useRouter();
   const [carouselImages, setCarouselImages] = useState<string[]>([]);
 
-  const [currentSlide, setCurrentSlide] = useState(0);
-  useEffect(() => {
-    if (carouselImages.length > 1) {
-      const timer = setInterval(() => {
-        setCurrentSlide(prev => (prev + 1) % carouselImages.length);
-      }, 3000);
-      return () => clearInterval(timer);
-    }
-  }, [carouselImages]);
-
   useEffect(() => {
     fetch('/api/admin?resource=app-config')
       .then(res => res.json())
@@ -267,10 +257,10 @@ export default function SignupPage() {
   const SignupCarousel = () => {
     if (carouselItems.length === 0) return null;
     return (
-      <div className="mt-4 mb-6" style={{ height: '180px', position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
+      <div className="mt-4 mb-6" style={{ height: '210px', position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
         <Carousel
           items={carouselItems}
-          baseWidth={300}
+          baseWidth={320}
           autoplay={true}
           autoplayDelay={3000}
           pauseOnHover={false}
