@@ -320,7 +320,7 @@ export default function LoginPage() {
             type="text"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
-            placeholder="ENTER YOUR EMAIL OR PHONE"
+            placeholder="Enter your email or phone"
             className={`w-full px-4 py-4 rounded-xl border ${errors.identifier ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm font-medium placeholder:text-gray-400`}
           />
           {errors.identifier && <p className="text-red-500 text-xs mt-1">{errors.identifier}</p>}
