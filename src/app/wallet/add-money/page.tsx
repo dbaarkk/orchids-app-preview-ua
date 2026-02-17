@@ -15,7 +15,7 @@ export default function AddMoneyPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    fetch('/api/admin?resource=app-config')
+    fetch('/api/config')
       .then(res => res.json())
       .then(data => setConfig(data.data))
       .catch(() => {});
@@ -65,12 +65,15 @@ export default function AddMoneyPage() {
           </div>
 
           {config?.payment_config?.upi_id && (
-            <div className="mb-6">
-              <p className="text-center text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">UPI ID</p>
-              <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
-                <span className="flex-1 text-sm font-semibold text-gray-700 truncate">{config.payment_config.upi_id}</span>
-                <button onClick={() => handleCopy(config.payment_config.upi_id)} className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
-                  {copied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4 text-gray-400" />}
+            <div className="mb-8">
+              <p className="text-center text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">UPI ID</p>
+              <div className="flex items-center gap-3 bg-primary/5 rounded-2xl px-5 py-4 border-2 border-primary/10 shadow-sm">
+                <span className="flex-1 text-base font-bold text-primary truncate">{config.payment_config.upi_id}</span>
+                <button
+                  onClick={() => handleCopy(config.payment_config.upi_id)}
+                  className="p-2.5 bg-white shadow-sm border border-gray-100 rounded-xl active:scale-95 transition-all"
+                >
+                  {copied ? <Check className="w-5 h-5 text-green-600" /> : <Copy className="w-5 h-5 text-primary" />}
                 </button>
               </div>
             </div>

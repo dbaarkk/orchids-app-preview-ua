@@ -45,7 +45,7 @@ export default function SignupPage() {
   }, [carouselImages]);
 
   useEffect(() => {
-    fetch('/api/admin?resource=app-config')
+    fetch('/api/config')
       .then(res => res.json())
       .then(data => {
         if (data.data?.signup_carousel?.images) {
@@ -267,10 +267,10 @@ export default function SignupPage() {
   const SignupCarousel = () => {
     if (carouselItems.length === 0) return null;
     return (
-      <div className="mt-4 mb-6" style={{ height: '180px', position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
+      <div className="mt-4 mb-6" style={{ height: '130px', position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
         <Carousel
           items={carouselItems}
-          baseWidth={300}
+          baseWidth={380}
           autoplay={true}
           autoplayDelay={3000}
           pauseOnHover={false}

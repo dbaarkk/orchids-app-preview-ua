@@ -1047,9 +1047,9 @@ export default function AdminPanel() {
                           await adminAction({ action: 'update-app-config', key: 'signup_carousel', value: { images: updated } });
                           fetchConfig();
                         }}
-                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-1 right-1 p-1.5 bg-red-500 text-white rounded-full shadow-lg transition-transform active:scale-90"
                       >
-                        <X className="w-3 h-3" />
+                        <X className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   ))}
@@ -1111,6 +1111,15 @@ export default function AdminPanel() {
                       >
                         {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                       </button>
+                      {qrCodeUrl && (
+                        <button
+                          onClick={() => setQrCodeUrl('')}
+                          className="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors"
+                          title="Delete QR Code"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
                   <button
