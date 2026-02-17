@@ -264,19 +264,22 @@ export default function SignupPage() {
     </div>
   );
 
-  const SignupCarousel = () => (
-    <div className="mt-8 mb-4" style={{ height: '600px', position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
-      <Carousel
-        items={carouselItems.length > 0 ? carouselItems : undefined}
-        baseWidth={300}
-        autoplay={true}
-        autoplayDelay={3000}
-        pauseOnHover={false}
-        loop={true}
-        round={false}
-      />
-    </div>
-  );
+  const SignupCarousel = () => {
+    if (carouselItems.length === 0) return null;
+    return (
+      <div className="mt-4 mb-6" style={{ height: '180px', position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <Carousel
+          items={carouselItems}
+          baseWidth={300}
+          autoplay={true}
+          autoplayDelay={3000}
+          pauseOnHover={false}
+          loop={true}
+          round={false}
+        />
+      </div>
+    );
+  };
 
   if (step === 'otp') {
     return (
@@ -288,6 +291,8 @@ export default function SignupPage() {
         >
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
+
+        <SignupCarousel />
 
         <h2 className="text-2xl font-bold text-gray-900 mb-1">Verify Phone</h2>
         <p className="text-gray-500 text-sm mb-8">
@@ -319,8 +324,6 @@ export default function SignupPage() {
           {otpVerifying ? 'Verifying...' : 'Verify Phone'}
         </button>
 
-        <SignupCarousel />
-
         <div className="text-center mt-4">
           {resendTimer > 0 ? (
             <p className="text-sm text-gray-400">Resend OTP in {resendTimer}s</p>
@@ -351,6 +354,8 @@ export default function SignupPage() {
           </div>
           <p className="text-sm text-green-700 font-medium">+91 {phone} verified</p>
         </div>
+
+        <SignupCarousel />
 
         <h2 className="text-2xl font-bold text-gray-900 mb-1">Complete Signup</h2>
         <p className="text-gray-500 text-sm mb-6">Fill in your details to create your account</p>
@@ -423,8 +428,6 @@ export default function SignupPage() {
           </button>
         </form>
 
-        <SignupCarousel />
-
         <p className="text-center text-sm text-gray-500 mt-6">
           Already have an account?{' '}
           <Link href="/login" className="text-primary font-semibold hover:underline">
@@ -445,6 +448,8 @@ export default function SignupPage() {
   return (
     <div className="mobile-container bg-white min-h-screen flex flex-col px-6 py-8">
       <Logo />
+
+      <SignupCarousel />
 
       <h2 className="text-2xl font-bold text-gray-900 mb-1">Create Account</h2>
       <p className="text-gray-500 text-sm mb-6">Enter your phone number to get started</p>
@@ -474,8 +479,6 @@ export default function SignupPage() {
           {otpSending ? 'Sending OTP...' : 'Send OTP'}
         </button>
       </form>
-
-      <SignupCarousel />
 
       <p className="text-center text-sm text-gray-500 mt-6">
         Already have an account?{' '}

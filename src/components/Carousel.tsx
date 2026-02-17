@@ -23,39 +23,6 @@ export interface CarouselProps {
   round?: boolean;
 }
 
-const DEFAULT_ITEMS: CarouselItem[] = [
-  {
-    title: 'Text Animations',
-    description: 'Cool text animations for your projects.',
-    id: 1,
-    icon: <FiFileText className="carousel-icon" />
-  },
-  {
-    title: 'Animations',
-    description: 'Smooth animations for your projects.',
-    id: 2,
-    icon: <FiCircle className="carousel-icon" />
-  },
-  {
-    title: 'Components',
-    description: 'Reusable components for your projects.',
-    id: 3,
-    icon: <FiLayers className="carousel-icon" />
-  },
-  {
-    title: 'Backgrounds',
-    description: 'Beautiful backgrounds and patterns for your projects.',
-    id: 4,
-    icon: <FiLayout className="carousel-icon" />
-  },
-  {
-    title: 'Common UI',
-    description: 'Common UI components are coming soon!',
-    id: 5,
-    icon: <FiCode className="carousel-icon" />
-  }
-];
-
 const DRAG_BUFFER = 0;
 const VELOCITY_THRESHOLD = 500;
 const GAP = 16;
@@ -90,23 +57,17 @@ function CarouselItem({ item, index, itemWidth, round, trackItemOffset, x, trans
     >
       <div className={`carousel-item-header ${round ? 'round' : ''}`}>
         {item.image ? (
-          <img src={item.image} alt={item.title || ''} className="carousel-image" />
+          <img src={item.image} alt="" className="carousel-image" />
         ) : (
           <span className="carousel-icon-container">{item.icon}</span>
         )}
       </div>
-      {(item.title || item.description) && (
-        <div className="carousel-item-content">
-          {item.title && <div className="carousel-item-title">{item.title}</div>}
-          {item.description && <p className="carousel-item-description">{item.description}</p>}
-        </div>
-      )}
     </motion.div>
   );
 }
 
 export default function Carousel({
-  items = DEFAULT_ITEMS,
+  items = [],
   baseWidth = 300,
   autoplay = false,
   autoplayDelay = 3000,
@@ -243,7 +204,7 @@ export default function Carousel({
   const activeIndex =
     items.length === 0 ? 0 : loop ? (position - 1 + items.length) % items.length : Math.min(position, items.length - 1);
 
-  if (items.length === 0) return <div />;
+  if (items.length === 0) return null;
 
   return (
     <div
