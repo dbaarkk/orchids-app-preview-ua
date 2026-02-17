@@ -315,12 +315,12 @@ export default function LoginPage() {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <div>
-          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Enter your email or phone</label>
+          <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">Enter your email or phone</label>
           <input
             type="text"
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
-            placeholder="Enter your email or phone"
+            placeholder="ENTER YOUR EMAIL OR PHONE"
             className={`w-full px-4 py-4 rounded-xl border ${errors.identifier ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm font-medium placeholder:text-gray-400`}
           />
           {errors.identifier && <p className="text-red-500 text-xs mt-1">{errors.identifier}</p>}

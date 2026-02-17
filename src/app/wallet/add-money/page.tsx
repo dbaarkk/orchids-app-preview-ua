@@ -15,13 +15,10 @@ export default function AddMoneyPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    fetch('/api/config')
+    fetch('/api/admin?resource=app-config')
       .then(res => res.json())
-      .then(data => {
-        console.log('Wallet config:', data);
-        setConfig(data.data);
-      })
-      .catch(err => console.error('Failed to fetch wallet config:', err));
+      .then(data => setConfig(data.data))
+      .catch(() => {});
   }, []);
 
   const handleCopy = (text: string) => {
@@ -68,25 +65,31 @@ export default function AddMoneyPage() {
           </div>
 
           {config?.payment_config?.upi_id && (
-            <div className="mb-8">
-              <p className="text-center text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">UPI ID</p>
-              <div className="flex items-center gap-3 bg-primary/5 rounded-2xl px-5 py-4 border-2 border-primary/10 shadow-sm">
-                <span className="flex-1 text-base font-bold text-primary truncate">{config.payment_config.upi_id}</span>
-                <button
-                  onClick={() => handleCopy(config.payment_config.upi_id)}
-                  className="p-2.5 bg-white shadow-sm border border-gray-100 rounded-xl active:scale-95 transition-all"
-                >
-                  {copied ? <Check className="w-5 h-5 text-green-600" /> : <Copy className="w-5 h-5 text-primary" />}
-                </button>
-              </div>
+            <div className="mb-4 text-center">
+              <p className="text-sm font-bold text-primary mb-1">{config.payment_config.upi_id}</p>
+              <button
+                onClick={() => handleCopy(config.payment_config.upi_id)}
+                className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center justify-center gap-1 mx-auto hover:text-primary transition-colors"
+              >
+                {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                {copied ? 'Copied' : 'Click to copy UPI ID'}
+              </button>
             </div>
           )}
 
-          <div className="relative aspect-square max-w-[240px] mx-auto mb-8 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden">
+          <div className="relative aspect-square max-w-[240px] mx-auto mb-8 bg-white rounded-2xl border border-gray-100 flex items-center justify-center overflow-hidden shadow-inner">
             {config?.payment_config?.qr_code_url ? (
-              <img src={config.payment_config.qr_code_url} alt="Payment QR" className="w-full h-full object-contain p-2" />
+              <img
+                key={config.payment_config.qr_code_url}
+                src={config.payment_config.qr_code_url}
+                alt="Payment QR"
+                className="w-full h-full object-contain p-4"
+              />
             ) : (
-              <QrCode className="w-20 h-20 text-gray-200" />
+              <div className="text-center p-8">
+                <QrCode className="w-16 h-16 text-gray-200 mx-auto mb-2" />
+                <p className="text-[10px] text-gray-400 font-medium">QR Code not available</p>
+              </div>
             )}
           </div>
 

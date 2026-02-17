@@ -2,8 +2,6 @@ import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendPushNotification } from '@/lib/fcm';
 
-export const dynamic = 'force-dynamic';
-
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
@@ -99,49 +97,6 @@ export async function GET(request: NextRequest) {
       const config: Record<string, any> = {};
       data.forEach(item => { config[item.key] = item.value; });
       return NextResponse.json({ data: config });
-    }
-
-    if (resource === 'export-users') {
-      const { data, error } = await adminClient
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-
-      const headers = ['display_id', 'id', 'user_name', 'user_email', 'user_phone', 'wallet_balance', 'verified', 'blocked', 'created_at', 'address_line1', 'address_line2', 'city', 'state', 'pincode'];
-
-      const csvRows = [];
-      csvRows.push(headers.map(h => `"${h}"`).join(','));
-
-      data.forEach((row: any) => {
-        const values = [
-          row.display_id || '',
-          row.id,
-          row.full_name || '',
-          row.email || '',
-          row.phone || '',
-          row.wallet_balance || 0,
-          row.verified ? 'Yes' : 'No',
-          row.blocked ? 'Yes' : 'No',
-          row.created_at,
-          row.address_line1 || '',
-          row.address_line2 || '',
-          row.city || '',
-          row.state || '',
-          row.pincode || ''
-        ];
-        csvRows.push(values.map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
-      });
-
-      const csvContent = csvRows.join('\n');
-
-      return new NextResponse(csvContent, {
-        headers: {
-          'Content-Type': 'text/csv',
-          'Content-Disposition': 'attachment; filename="users_export.csv"',
-        },
-      });
     }
 
     return NextResponse.json({ error: 'Invalid resource' }, { status: 400 });
