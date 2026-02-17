@@ -48,11 +48,12 @@ export default function SignupPage() {
     fetch('/api/config')
       .then(res => res.json())
       .then(data => {
+        console.log('Signup config:', data);
         if (data.data?.signup_carousel?.images) {
           setCarouselImages(data.data.signup_carousel.images);
         }
       })
-      .catch(() => {});
+      .catch(err => console.error('Failed to fetch signup config:', err));
   }, []);
 
   useEffect(() => {
@@ -267,10 +268,10 @@ export default function SignupPage() {
   const SignupCarousel = () => {
     if (carouselItems.length === 0) return null;
     return (
-      <div className="mt-4 mb-6" style={{ height: '130px', position: 'relative', width: '100%', display: 'flex', justifyContent: 'center' }}>
+      <div className="mt-4 mb-6" style={{ height: '130px', position: 'relative', width: '100%', display: 'flex', justifyContent: 'center', overflow: 'hidden' }}>
         <Carousel
           items={carouselItems}
-          baseWidth={380}
+          baseWidth={320}
           autoplay={true}
           autoplayDelay={3000}
           pauseOnHover={false}

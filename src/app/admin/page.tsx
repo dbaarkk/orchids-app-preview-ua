@@ -49,6 +49,7 @@ interface Profile {
   blocked: boolean;
   wallet_balance: number;
   location_coords?: { lat: number; lng: number };
+  display_id?: string;
 }
 
 interface ServicePrice {
@@ -127,6 +128,15 @@ export default function AdminPanel() {
   const [notificationTitle, setNotificationTitle] = useState('');
   const [notificationContent, setNotificationContent] = useState('');
   const [pushingNotification, setPushingNotification] = useState(false);
+
+  const exportUsers = () => {
+    const link = document.createElement('a');
+    link.href = '/api/admin?resource=export-users';
+    link.setAttribute('download', 'users_export.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const [showCarouselModal, setShowCarouselModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -678,6 +688,13 @@ export default function AdminPanel() {
         <div className="px-4 py-4 pb-8 space-y-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm text-gray-500">{profiles.length} registered users</p>
+            <button
+              onClick={exportUsers}
+              className="flex items-center gap-2 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary/90 transition-colors shadow-sm"
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Export Users
+            </button>
           </div>
           <div className="relative mb-2">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -717,7 +734,10 @@ export default function AdminPanel() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-gray-900 text-sm truncate">{profile.full_name || 'Unknown'}</h3>
+                        <h3 className="font-bold text-gray-900 text-sm truncate">
+                          {profile.display_id ? <span className="text-primary mr-1">#{profile.display_id}</span> : ''}
+                          {profile.full_name || 'Unknown'}
+                        </h3>
                         {profile.blocked && <span className="px-1.5 py-0.5 bg-red-100 text-red-600 text-[9px] font-bold rounded shrink-0">BLOCKED</span>}
                         {!profile.blocked && profile.verified && <ShieldCheck className="w-3.5 h-3.5 text-green-500 shrink-0" />}
                         {!profile.blocked && !profile.verified && <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-[9px] font-bold rounded shrink-0">UNVERIFIED</span>}
@@ -1076,7 +1096,18 @@ export default function AdminPanel() {
                 <div className="space-y-3">
                   <div>
                     <label className="text-[10px] font-bold text-gray-500 uppercase">UPI ID</label>
-                    <input type="text" value={upiId} onChange={(e) => setUpiId(e.target.value)} placeholder="e.g. urbanauto@okaxis" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none mt-1" />
+                    <div className="flex gap-2 mt-1">
+                      <input type="text" value={upiId} onChange={(e) => setUpiId(e.target.value)} placeholder="e.g. urbanauto@okaxis" className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none" />
+                      {upiId && (
+                        <button
+                          onClick={() => setUpiId('')}
+                          className="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-100 transition-colors"
+                          title="Delete UPI ID"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div>
                     <label className="text-[10px] font-bold text-gray-500 uppercase">QR Code Image URL</label>

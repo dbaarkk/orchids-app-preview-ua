@@ -17,8 +17,11 @@ export default function AddMoneyPage() {
   useEffect(() => {
     fetch('/api/config')
       .then(res => res.json())
-      .then(data => setConfig(data.data))
-      .catch(() => {});
+      .then(data => {
+        console.log('Wallet config:', data);
+        setConfig(data.data);
+      })
+      .catch(err => console.error('Failed to fetch wallet config:', err));
   }, []);
 
   const handleCopy = (text: string) => {
