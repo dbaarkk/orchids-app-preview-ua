@@ -22,6 +22,10 @@ export interface User {
     verified?: boolean;
     blocked?: boolean;
     walletBalance?: number;
+    vehicleType?: string;
+    vehicleNumber?: string;
+    vehicleMakeModel?: string;
+    manualLocationLink?: string;
   }
 
 export interface Booking {
@@ -92,6 +96,10 @@ function mapProfileToUser(profile: any): User {
     verified: profile.verified ?? false,
     blocked: profile.blocked ?? false,
     walletBalance: profile.wallet_balance ?? 0,
+    vehicleType: profile.vehicle_type,
+    vehicleNumber: profile.vehicle_number,
+    vehicleMakeModel: profile.vehicle_make_model,
+    manualLocationLink: profile.manual_location_link,
   };
 }
 
@@ -139,24 +147,18 @@ async function fetchBookings(userId: string): Promise<Booking[]> {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const userRef = useRef<User | null>(null);
-
-  // Profile persistence for split-second glitch fix
-  useEffect(() => {
-    const cached = localStorage.getItem('ua_cached_user');
-    if (cached) {
-      try {
-        const u = JSON.parse(cached);
-        setUser(u);
-        userRef.current = u;
-      } catch (e) {
-        console.error('Failed to parse cached user', e);
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== 'undefined') {
+      const cached = localStorage.getItem('ua_cached_user');
+      if (cached) {
+        try { return JSON.parse(cached); } catch { return null; }
       }
     }
-  }, []);
+    return null;
+  });
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const userRef = useRef<User | null>(user);
 
   useEffect(() => {
     userRef.current = user;
@@ -530,6 +532,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             .select();
 
           if (error) throw error;
+
+          // Update profile vehicle details
+          if (bookingData.vehicleType || bookingData.vehicleNumber || bookingData.vehicleMakeModel) {
+            await supabase.from('profiles').update({
+              vehicle_type: bookingData.vehicleType || current.vehicleType,
+              vehicle_number: bookingData.vehicleNumber || current.vehicleNumber,
+              vehicle_make_model: bookingData.vehicleMakeModel || current.vehicleMakeModel,
+            }).eq('id', current.id);
+            await refreshUser();
+          }
 
       if (data && data[0]) {
         setBookings(prev => [mapBooking(data[0]), ...prev]);

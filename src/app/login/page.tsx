@@ -12,11 +12,8 @@ import { getAssetPath } from '@/lib/utils';
 type LoginMode = 'email' | 'phone';
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<LoginMode>('email');
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState(''); // Email or Phone
   const [password, setPassword] = useState('');
-  const [phone, setPhone] = useState('');
-  const [phonePassword, setPhonePassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -54,58 +51,44 @@ export default function LoginPage() {
     );
   }
 
-  const validateEmail = () => {
+  const validate = () => {
     const newErrors: Record<string, string> = {};
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!email) newErrors.email = 'Email is required';
-    else if (!emailRegex.test(email)) newErrors.email = 'Please enter a valid email';
+    if (!identifier.trim()) newErrors.identifier = 'Email or phone is required';
     if (!password) newErrors.password = 'Password is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const validatePhone = () => {
-    const newErrors: Record<string, string> = {};
-    if (!phone) newErrors.phone = 'Phone number is required';
-    else if (!/^[6-9]\d{9}$/.test(phone)) newErrors.phone = 'Please enter a valid 10-digit phone number';
-    if (!otpMode && !phonePassword) newErrors.phonePassword = 'Password is required';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleEmailSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validateEmail()) return;
-
-    setLoading(true);
-    const result = await login(email, password);
-    if (result.success) {
-      setRedirecting(true);
-      toast.success('Login successful!');
-      const dest = result.isAdmin ? '/admin' : '/home';
-      router.replace(dest);
-      setTimeout(() => router.replace(dest), 100);
-    } else {
-      toast.error(result.error || 'Login failed');
-      setLoading(false);
-    }
-  };
-
-  const handlePhonePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validatePhone()) return;
+    if (!validate()) return;
 
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/phone-password-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, password: phonePassword }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      const isEmail = identifier.includes('@');
+      let finalEmail = identifier;
+      let finalPassword = password;
 
-      const result = await login(data.email, phonePassword);
+      if (!isEmail) {
+        // Handle phone login with password
+        const phone = identifier.replace(/\D/g, '');
+        if (phone.length !== 10) {
+          toast.error('Please enter a valid 10-digit phone number or email');
+          setLoading(false);
+          return;
+        }
+
+        const res = await fetch('/api/auth/phone-password-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, password }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+        finalEmail = data.email;
+      }
+
+      const result = await login(finalEmail, finalPassword);
       if (result.success) {
         setRedirecting(true);
         toast.success('Login successful!');
@@ -122,17 +105,17 @@ export default function LoginPage() {
     }
   };
 
-  const sendOtp = async () => {
+  const sendOtp = async (phoneNum: string) => {
     setOtpSending(true);
     try {
       const res = await fetch('/api/auth/send-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({ phone: phoneNum }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      toast.success('OTP sent to +91' + phone);
+      toast.success('OTP sent to +91' + phoneNum);
       setResendTimer(30);
     } catch (err: any) {
       toast.error(err.message || 'Failed to send OTP');
@@ -143,10 +126,11 @@ export default function LoginPage() {
   };
 
   const handleLoginWithOtp = async () => {
-    const newErrors: Record<string, string> = {};
-    if (!phone) newErrors.phone = 'Phone number is required';
-    else if (!/^[6-9]\d{9}$/.test(phone)) newErrors.phone = 'Please enter a valid 10-digit phone number';
-    if (Object.keys(newErrors).length) { setErrors(newErrors); return; }
+    const phone = identifier.replace(/\D/g, '');
+    if (phone.length !== 10) {
+      toast.error('Please enter your 10-digit phone number first');
+      return;
+    }
 
     setOtpSending(true);
     try {
@@ -162,7 +146,7 @@ export default function LoginPage() {
         return;
       }
 
-      await sendOtp();
+      await sendOtp(phone);
       setOtpMode(true);
       setTimeout(() => inputRefs.current[0]?.focus(), 100);
     } catch {
@@ -233,6 +217,7 @@ export default function LoginPage() {
   };
 
   if (otpMode) {
+    const phone = identifier.replace(/\D/g, '');
     return (
       <div className="mobile-container bg-white min-h-screen flex flex-col px-6 py-8">
         <div className="flex flex-col items-center mb-10">
@@ -294,7 +279,7 @@ export default function LoginPage() {
             <p className="text-sm text-gray-400">Resend OTP in {resendTimer}s</p>
           ) : (
             <button
-              onClick={sendOtp}
+              onClick={() => sendOtp(phone)}
               disabled={otpSending}
               className="text-sm text-primary font-semibold hover:underline disabled:opacity-50"
             >
@@ -325,137 +310,67 @@ export default function LoginPage() {
         </h1>
       </div>
 
-      <h2 className="text-2xl font-bold text-gray-900 mb-1">Welcome Back</h2>
-      <p className="text-gray-500 text-sm mb-6">Login to your Urban Auto account</p>
+      <h2 className="text-2xl font-bold text-gray-900 mb-1 text-center">Welcome Back</h2>
+      <p className="text-gray-500 text-sm mb-8 text-center">Login to your Urban Auto account</p>
 
-      <div className="flex bg-gray-100 rounded-xl p-1 mb-6">
-        <button
-          onClick={() => { setMode('email'); setErrors({}); }}
-          className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${mode === 'email' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
-        >
-          Email
-        </button>
-        <button
-          onClick={() => { setMode('phone'); setErrors({}); }}
-          className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all ${mode === 'phone' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
-        >
-          Phone
-        </button>
-      </div>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <div>
+          <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">Enter your email or phone</label>
+          <input
+            type="text"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            placeholder="ENTER YOUR EMAIL OR PHONE"
+            className={`w-full px-4 py-4 rounded-xl border ${errors.identifier ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm font-medium placeholder:text-gray-400`}
+          />
+          {errors.identifier && <p className="text-red-500 text-xs mt-1">{errors.identifier}</p>}
+        </div>
 
-      {mode === 'email' ? (
-        <form onSubmit={handleEmailSubmit} className="flex flex-col gap-5">
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Email</label>
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Password</label>
+          <div className="relative">
             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              className={`w-full px-4 py-3.5 rounded-xl border ${errors.email ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm`}
+              type={showPassword ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              className={`w-full px-4 py-3.5 rounded-xl border ${errors.password ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm pr-11`}
             />
-            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Password</label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                className={`w-full px-4 py-3.5 rounded-xl border ${errors.password ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm pr-11`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
-          </div>
-
-          <div className="flex justify-end -mt-1">
-            <Link href="/forgot-password" className="text-xs text-primary font-medium hover:underline">
-              Forgot Password?
-            </Link>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm mt-2 hover:bg-primary/90 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
-          >
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {loading ? 'Logging in...' : 'Login'}
-          </button>
-        </form>
-      ) : (
-        <form onSubmit={handlePhonePasswordSubmit} className="flex flex-col gap-5">
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Phone Number</label>
-            <div className={`flex items-center border rounded-xl px-4 py-3.5 bg-gray-50 focus-within:bg-white focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all ${errors.phone ? 'border-red-400' : 'border-gray-200'}`}>
-              <span className="text-gray-400 text-sm mr-2">+91</span>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                placeholder="Enter 10-digit phone number"
-                className="flex-1 outline-none text-sm bg-transparent"
-              />
-            </div>
-            {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Password</label>
-            <div className="relative">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={phonePassword}
-                onChange={(e) => setPhonePassword(e.target.value)}
-                placeholder="Enter your password"
-                className={`w-full px-4 py-3.5 rounded-xl border ${errors.phonePassword ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm pr-11`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-            {errors.phonePassword && <p className="text-red-500 text-xs mt-1">{errors.phonePassword}</p>}
-          </div>
-
-          <div className="flex justify-between -mt-1">
             <button
               type="button"
-              onClick={handleLoginWithOtp}
-              disabled={otpSending}
-              className="text-xs text-primary font-medium hover:underline disabled:opacity-50 flex items-center gap-1"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
             >
-              {otpSending && <Loader2 className="w-3 h-3 animate-spin" />}
-              Login with OTP
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
             </button>
-            <Link href="/forgot-password" className="text-xs text-primary font-medium hover:underline">
-              Forgot Password?
-            </Link>
           </div>
+          {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+        </div>
 
+        <div className="flex justify-between items-center -mt-1">
           <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm mt-2 hover:bg-primary/90 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            type="button"
+            onClick={handleLoginWithOtp}
+            disabled={otpSending}
+            className="text-xs text-primary font-semibold hover:underline disabled:opacity-50 flex items-center gap-1.5"
           >
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {loading ? 'Logging in...' : 'Login'}
+            {otpSending && <Loader2 className="w-3 h-3 animate-spin" />}
+            Login with OTP
           </button>
-        </form>
-      )}
+          <Link href="/forgot-password" className="text-xs text-primary font-medium hover:underline">
+            Forgot Password?
+          </Link>
+        </div>
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-primary text-white py-4 rounded-xl font-bold text-sm mt-2 hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 disabled:opacity-60 flex items-center justify-center gap-2 active:scale-[0.98]"
+        >
+          {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
+      </form>
 
       <p className="text-center text-sm text-gray-500 mt-8">
         Don&apos;t have an account?{' '}

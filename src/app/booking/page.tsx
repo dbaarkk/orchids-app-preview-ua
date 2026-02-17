@@ -20,9 +20,9 @@ function BookingContent() {
     
     const [selectedServices, setSelectedServices] = useState<string[]>([]);
     const [showServiceList, setShowServiceList] = useState(false);
-    const [vehicleType, setVehicleType] = useState('');
-    const [vehicleNumber, setVehicleNumber] = useState('');
-    const [vehicleMakeModel, setVehicleMakeModel] = useState('');
+    const [vehicleType, setVehicleType] = useState(user?.vehicleType || '');
+    const [vehicleNumber, setVehicleNumber] = useState(user?.vehicleNumber || '');
+    const [vehicleMakeModel, setVehicleMakeModel] = useState(user?.vehicleMakeModel || '');
     const [serviceMode, setServiceMode] = useState<'Home Service' | 'Pickup & Drop'>('Pickup & Drop');
     const [date, setDate] = useState('');
     const [time, setTime] = useState('');
@@ -45,8 +45,13 @@ function BookingContent() {
         } catch (e) {
           console.error('Failed to parse booking draft', e);
         }
+      } else if (user) {
+        // Fallback to profile details if no draft
+        if (user.vehicleType) setVehicleType(user.vehicleType);
+        if (user.vehicleNumber) setVehicleNumber(user.vehicleNumber);
+        if (user.vehicleMakeModel) setVehicleMakeModel(user.vehicleMakeModel);
       }
-    }, []);
+    }, [user]);
 
     useEffect(() => {
       const data = { selectedServices, vehicleType, vehicleNumber, vehicleMakeModel, serviceMode, date, time, notes };

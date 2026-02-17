@@ -105,7 +105,17 @@ export default function UserDetailPage() {
 
   const [couponCode, setCouponCode] = useState('');
   const [couponDiscount, setCouponDiscount] = useState('');
+  const [couponLimit, setCouponLimit] = useState('1');
   const [addingCoupon, setAddingCoupon] = useState(false);
+
+  const [manualLocation, setManualLocation] = useState('');
+  const [updatingLocation, setUpdatingLocation] = useState(false);
+
+  useEffect(() => {
+    if (profile?.manual_location_link) {
+      setManualLocation(profile.manual_location_link);
+    }
+  }, [profile]);
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -182,6 +192,7 @@ export default function UserDetailPage() {
         couponCode: couponCode.trim().toUpperCase(),
         couponDiscount,
         couponUserId: userId,
+        usageLimit: Number(couponLimit) || 1,
       });
       toast.success('Coupon created');
       setCouponCode('');
@@ -219,6 +230,17 @@ export default function UserDetailPage() {
       setProfile(fresh.profile);
     } catch { toast.error('Action failed'); }
     setActionLoading(null);
+  };
+
+  const updateManualLocation = async () => {
+    setUpdatingLocation(true);
+    try {
+      await adminAction({ action: 'update-user-manual-location', userId, link: manualLocation });
+      toast.success('Manual location updated');
+      const fresh = await adminFetch('user-detail', { userId });
+      setProfile(fresh.profile);
+    } catch { toast.error('Failed to update location'); }
+    setUpdatingLocation(false);
   };
 
   const handlePasswordReset = async () => {
@@ -304,7 +326,16 @@ export default function UserDetailPage() {
                   <span className="text-sm text-gray-700">
                     {profile.location_address || [profile.address_line1, profile.address_line2, profile.city, profile.state, profile.pincode].filter(Boolean).join(', ')}
                   </span>
-                  {profile.location_coords && (
+                  {profile.manual_location_link ? (
+                    <a
+                      href={profile.manual_location_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block mt-1 text-[10px] text-green-600 font-bold hover:underline flex items-center gap-1"
+                    >
+                      <MapPin className="w-2.5 h-2.5" /> View Manual Location
+                    </a>
+                  ) : profile.location_coords && (
                     <a
                       href={`https://www.google.com/maps/search/?api=1&query=${profile.location_coords.lat},${profile.location_coords.lng}`}
                       target="_blank"
@@ -422,46 +453,86 @@ export default function UserDetailPage() {
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
           <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-green-600" />
+            Update Manual Map Link
+          </h3>
+          <div className="space-y-3">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={manualLocation}
+                onChange={(e) => setManualLocation(e.target.value)}
+                placeholder="Paste Google Maps URL here"
+                className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-green-400"
+              />
+              <button
+                onClick={updateManualLocation}
+                disabled={updatingLocation}
+                className="px-4 py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold disabled:opacity-60 flex items-center gap-1.5"
+              >
+                {updatingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                Update
+              </button>
+            </div>
+            <p className="text-[10px] text-gray-400">This link will be shown in future bookings if Fetch Location is inaccurate.</p>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+          <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
             <Ticket className="w-4 h-4 text-purple-600" />
             Create Coupon for {profile.full_name || 'User'}
           </h3>
-          <div className="flex gap-2">
+          <div className="space-y-3">
             <input
               type="text"
               value={couponCode}
               onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-              placeholder="Code"
-              className="flex-1 px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-purple-400 uppercase"
+              placeholder="Coupon Code"
+              className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-purple-400 uppercase"
             />
-            <div className="relative w-20">
-              <input
-                type="number"
-                value={couponDiscount}
-                onChange={(e) => setCouponDiscount(e.target.value)}
-                placeholder="%"
-                min="1"
-                max="100"
-                className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-purple-400 text-center pr-7"
-              />
-              <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="relative">
+                <input
+                  type="number"
+                  value={couponDiscount}
+                  onChange={(e) => setCouponDiscount(e.target.value)}
+                  placeholder="Discount %"
+                  min="1"
+                  max="100"
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-purple-400 pr-7"
+                />
+                <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
+              </div>
+              <div className="relative">
+                <input
+                  type="number"
+                  value={couponLimit}
+                  onChange={(e) => setCouponLimit(e.target.value)}
+                  placeholder="Usage Limit"
+                  min="1"
+                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-purple-400 pr-10"
+                />
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold">USES</span>
+              </div>
             </div>
             <button
               onClick={addUserCoupon}
               disabled={addingCoupon}
-              className="px-4 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-bold disabled:opacity-60 flex items-center gap-1.5"
+              className="w-full py-2.5 bg-purple-600 text-white rounded-xl text-sm font-bold disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {addingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-              Add
+              Add Coupon
             </button>
           </div>
 
           {coupons.length > 0 && (
-            <div className="mt-3 space-y-2">
+            <div className="mt-3 space-y-2 pt-3 border-t border-gray-100">
               {coupons.map(coupon => (
                 <div key={coupon.id} className={`flex items-center justify-between p-3 rounded-xl ${coupon.active ? 'bg-purple-50 border border-purple-200' : 'bg-gray-50 border border-gray-200 opacity-60'}`}>
                   <div>
                     <p className="text-xs font-bold text-gray-900 tracking-wider">{coupon.code}</p>
-                    <p className="text-[10px] text-gray-500">{coupon.discount_percent}% off</p>
+                    <p className="text-[10px] text-gray-500">{coupon.discount_percent}% off • Limit: {coupon.usage_limit || 1} uses</p>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <button onClick={() => toggleCoupon(coupon.id, coupon.active)} className={`p-1.5 rounded-lg ${coupon.active ? 'bg-purple-100' : 'bg-gray-100'}`}>
@@ -548,7 +619,17 @@ export default function UserDetailPage() {
                             <MapPin className="w-3.5 h-3.5 text-primary/60 mt-0.5" />
                             <div className="flex-1">
                               <span className="text-xs text-gray-600">{booking.address || 'No address'}</span>
-                              {booking.location_coords && (
+                              {profile.manual_location_link ? (
+                                <a
+                                  href={profile.manual_location_link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="block mt-1 text-[10px] text-green-600 font-bold hover:underline flex items-center gap-1"
+                                >
+                                  <MapPin className="w-2.5 h-2.5" /> View Manual Location
+                                </a>
+                              ) : booking.location_coords && (
                                 <a
                                   href={`https://www.google.com/maps/search/?api=1&query=${booking.location_coords.lat},${booking.location_coords.lng}`}
                                   target="_blank"

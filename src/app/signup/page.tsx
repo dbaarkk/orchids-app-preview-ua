@@ -31,6 +31,18 @@ export default function SignupPage() {
 
   const { signup, user, isAdmin, isLoading } = useAuth();
   const router = useRouter();
+  const [carouselImages, setCarouselImages] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch('/api/admin?resource=app-config')
+      .then(res => res.json())
+      .then(data => {
+        if (data.data?.signup_carousel?.images) {
+          setCarouselImages(data.data.signup_carousel.images);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!isLoading && user && !redirecting) {
@@ -215,19 +227,49 @@ export default function SignupPage() {
     }
   };
 
+  const [currentSlide, setCurrentSlide] = useState(0);
+  useEffect(() => {
+    if (carouselImages.length > 1) {
+      const timer = setInterval(() => {
+        setCurrentSlide(prev => (prev + 1) % carouselImages.length);
+      }, 3000);
+      return () => clearInterval(timer);
+    }
+  }, [carouselImages]);
+
   const Logo = () => (
     <div className="flex flex-col items-center mb-8">
-      <div className="relative w-[80px] h-[80px] flex items-center justify-center">
-        <Image
-          src={getAssetPath('/urban-auto-logo.jpg')}
-          alt="Urban Auto"
-          width={80}
-          height={80}
-          className="rounded-xl shadow-md object-cover"
-          priority
-          unoptimized
-        />
-      </div>
+      {carouselImages.length > 0 ? (
+        <div className="w-full aspect-[21/9] relative rounded-2xl overflow-hidden mb-6 shadow-lg bg-gray-100">
+          <AnimatePresence mode="wait">
+            <motion.img
+              key={currentSlide}
+              src={carouselImages[currentSlide]}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="w-full h-full object-cover"
+            />
+          </AnimatePresence>
+          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+            {carouselImages.map((_, i) => (
+              <div key={i} className={`w-1.5 h-1.5 rounded-full transition-all ${i === currentSlide ? 'bg-white w-4' : 'bg-white/50'}`} />
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="relative w-[80px] h-[80px] flex items-center justify-center">
+          <Image
+            src={getAssetPath('/urban-auto-logo.jpg')}
+            alt="Urban Auto"
+            width={80}
+            height={80}
+            className="rounded-xl shadow-md object-cover"
+            priority
+            unoptimized
+          />
+        </div>
+      )}
       <h1 className="text-xl font-bold text-gray-900 mt-4">
         URBAN <span className="text-primary">AUTO</span>
       </h1>

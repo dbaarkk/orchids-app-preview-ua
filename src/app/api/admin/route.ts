@@ -20,10 +20,22 @@ export async function GET(request: NextRequest) {
     if (resource === 'bookings') {
       const { data, error } = await adminClient
         .from('bookings')
-        .select('*')
+        .select(`
+          *,
+          profiles:user_id (
+            manual_location_link
+          )
+        `)
         .order('created_at', { ascending: false });
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-      return NextResponse.json({ data });
+
+      // Flatten the profile data
+      const flattened = data.map((b: any) => ({
+        ...b,
+        manual_location_link: b.profiles?.manual_location_link
+      }));
+
+      return NextResponse.json({ data: flattened });
     }
 
     if (resource === 'profiles') {
@@ -75,6 +87,16 @@ export async function GET(request: NextRequest) {
         .order('created_at', { ascending: false });
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       return NextResponse.json({ data });
+    }
+
+    if (resource === 'app-config') {
+      const { data, error } = await adminClient
+        .from('app_config')
+        .select('*');
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      const config: Record<string, any> = {};
+      data.forEach(item => { config[item.key] = item.value; });
+      return NextResponse.json({ data: config });
     }
 
     return NextResponse.json({ error: 'Invalid resource' }, { status: 400 });
@@ -156,6 +178,7 @@ export async function POST(request: Request) {
     }
 
     if (action === 'create-coupon') {
+      const { couponCode, couponDiscount, couponUserId, usageLimit } = body;
       if (!couponCode || !couponDiscount) {
         return NextResponse.json({ error: 'Code and discount required' }, { status: 400 });
       }
@@ -163,6 +186,7 @@ export async function POST(request: Request) {
         code: couponCode.trim().toUpperCase(),
         discount_percent: Number(couponDiscount),
         active: true,
+        usage_limit: usageLimit || 1
       };
       if (couponUserId) insertData.user_id = couponUserId;
 
@@ -285,6 +309,25 @@ export async function POST(request: Request) {
       }
 
       return NextResponse.json({ success: true, deviceCount: tokenList.length });
+    }
+
+    if (action === 'update-app-config') {
+      const { key, value } = body;
+      const { error } = await adminClient
+        .from('app_config')
+        .upsert({ key, value, updated_at: new Date().toISOString() });
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'update-user-manual-location') {
+      const { userId, link } = body;
+      const { error } = await adminClient
+        .from('profiles')
+        .update({ manual_location_link: link })
+        .eq('id', userId);
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ success: true });
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });

@@ -15,7 +15,11 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     location_coords jsonb,
     verified boolean DEFAULT false,
     blocked boolean DEFAULT false,
-    wallet_balance numeric DEFAULT 0
+    wallet_balance numeric DEFAULT 0,
+    vehicle_type text,
+    vehicle_number text,
+    vehicle_make_model text,
+    manual_location_link text
 );
 
 -- Bookings Table
@@ -74,7 +78,9 @@ CREATE TABLE IF NOT EXISTS public.coupons (
     discount_percent numeric,
     active boolean DEFAULT true,
     user_id uuid REFERENCES public.profiles(id) ON DELETE CASCADE,
-    created_at timestamptz DEFAULT now()
+    created_at timestamptz DEFAULT now(),
+    usage_limit integer DEFAULT 1,
+    first_booking_only boolean DEFAULT false
 );
 
 -- Wallet Transactions Table
@@ -87,3 +93,17 @@ CREATE TABLE IF NOT EXISTS public.wallet_transactions (
     booking_id uuid REFERENCES public.bookings(id) ON DELETE SET NULL,
     created_at timestamptz DEFAULT now()
 );
+
+-- App Config Table
+CREATE TABLE IF NOT EXISTS public.app_config (
+    key text PRIMARY KEY,
+    value jsonb,
+    updated_at timestamptz DEFAULT now()
+);
+
+-- Initial App Config
+INSERT INTO public.app_config (key, value)
+VALUES
+('signup_carousel', '{"images": []}'),
+('payment_config', '{"upi_id": "", "qr_code_url": ""}')
+ON CONFLICT (key) DO NOTHING;

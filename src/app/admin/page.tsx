@@ -3,8 +3,9 @@
 import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
-import { LogOut, Check, RefreshCw, ChevronDown, ChevronUp, User, Phone, Mail, MapPin, Car, FileText, Calendar, Loader2, Copy, Users, CalendarDays, KeyRound, Eye, EyeOff, X, ShieldCheck, IndianRupee, Wrench, AlertTriangle, Truck, Home, Search, Ticket, Plus, Trash2, ToggleLeft, ToggleRight, ChevronRight, Bell } from 'lucide-react';
+import { LogOut, Check, RefreshCw, ChevronDown, ChevronUp, User, Phone, Mail, MapPin, Car, FileText, Calendar, Loader2, Copy, Users, CalendarDays, KeyRound, Eye, EyeOff, X, ShieldCheck, IndianRupee, Wrench, AlertTriangle, Truck, Home, Search, Ticket, Plus, Trash2, ToggleLeft, ToggleRight, ChevronRight, Bell, Settings, Image as ImageIcon, QrCode, MessageSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
 interface AdminBooking {
@@ -29,6 +30,7 @@ interface AdminBooking {
   payment_status: string;
   payment_method: string;
   location_coords?: { lat: number; lng: number };
+  manual_location_link?: string;
 }
 
 interface Profile {
@@ -66,6 +68,7 @@ interface Coupon {
   active: boolean;
   user_id: string | null;
   created_at: string;
+  usage_limit: number;
 }
 
 async function adminFetch(resource: string) {
@@ -125,6 +128,26 @@ export default function AdminPanel() {
   const [notificationContent, setNotificationContent] = useState('');
   const [pushingNotification, setPushingNotification] = useState(false);
 
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [configLoading, setConfigLoading] = useState(false);
+  const [appConfig, setAppConfig] = useState<any>({});
+  const [newCarouselUrl, setNewCarouselUrl] = useState('');
+  const [upiId, setUpiId] = useState('');
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+
+  const fetchConfig = useCallback(async () => {
+    try {
+      const data = await adminFetch('app-config');
+      setAppConfig(data);
+      setUpiId(data.payment_config?.upi_id || '');
+      setQrCodeUrl(data.payment_config?.qr_code_url || '');
+    } catch { toast.error('Failed to load config'); }
+  }, []);
+
+  useEffect(() => {
+    if (isAdmin && showConfigModal) fetchConfig();
+  }, [isAdmin, showConfigModal, fetchConfig]);
+
   useEffect(() => {
     if (!isLoading && !loggingOut && (!user || !isAdmin)) {
       router.replace('/login');
@@ -139,6 +162,33 @@ export default function AdminPanel() {
     } catch { toast.error('Failed to load bookings'); }
     setLoadingBookings(false);
   }, []);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    const channel = supabase
+      .channel('admin-bookings-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'bookings' },
+        (payload) => {
+          setBookings(prev => [payload.new as AdminBooking, ...prev]);
+          toast.success('New booking received!', { position: 'top-right' });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'bookings' },
+        (payload) => {
+          setBookings(prev => prev.map(b => b.id === payload.new.id ? { ...b, ...payload.new } : b));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin]);
 
   const fetchProfiles = useCallback(async () => {
     setLoadingProfiles(true);
@@ -275,6 +325,8 @@ export default function AdminPanel() {
     setSavingPrice(false);
   };
 
+  const [newCouponLimit, setNewCouponLimit] = useState('1');
+
   const addCoupon = async () => {
     if (!newCouponCode.trim()) { toast.error('Enter coupon code'); return; }
     if (!newCouponDiscount || Number(newCouponDiscount) <= 0 || Number(newCouponDiscount) > 100) { toast.error('Enter valid discount (1-100%)'); return; }
@@ -284,6 +336,7 @@ export default function AdminPanel() {
         action: 'create-coupon',
         couponCode: newCouponCode,
         couponDiscount: newCouponDiscount,
+        usageLimit: Number(newCouponLimit) || 1,
       });
       toast.success('Coupon created');
       setNewCouponCode('');
@@ -502,7 +555,12 @@ export default function AdminPanel() {
                       <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
                         <div className="px-4 pb-4 border-t border-gray-100 pt-3 space-y-2.5">
                           <div className="flex items-center gap-2"><Mail className="w-3.5 h-3.5 text-primary/60" /><span className="text-xs text-gray-600">{booking.user_email || 'N/A'}</span></div>
-                          <div className="flex items-center gap-2"><Phone className="w-3.5 h-3.5 text-primary/60" /><span className="text-xs text-gray-600">{booking.user_phone || 'N/A'}</span></div>
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-3.5 h-3.5 text-primary/60" />
+                            <a href={`tel:+91${booking.user_phone}`} className="text-xs text-primary font-bold hover:underline">
+                              +91 {booking.user_phone || 'N/A'}
+                            </a>
+                          </div>
                           <div className="flex items-center gap-2"><Car className="w-3.5 h-3.5 text-primary/60" /><span className="text-xs text-gray-600">{booking.vehicle_type} {booking.vehicle_number && `- ${booking.vehicle_number}`}</span></div>
                           {booking.vehicle_make_model && (
                             <div className="flex items-center gap-2"><Car className="w-3.5 h-3.5 text-primary/60" /><span className="text-xs text-gray-600">Make/Model: {booking.vehicle_make_model}</span></div>
@@ -517,7 +575,17 @@ export default function AdminPanel() {
                             <MapPin className="w-3.5 h-3.5 text-primary/60 mt-0.5" />
                             <div className="flex-1">
                               <span className="text-xs text-gray-600">{booking.address || 'No address'}</span>
-                              {booking.location_coords && (
+                              {booking.manual_location_link ? (
+                                <a
+                                  href={booking.manual_location_link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="block mt-1 text-[10px] text-green-600 font-bold hover:underline flex items-center gap-1"
+                                >
+                                  <MapPin className="w-2.5 h-2.5" /> View Manual Location
+                                </a>
+                              ) : booking.location_coords && (
                                 <a
                                   href={`https://www.google.com/maps/search/?api=1&query=${booking.location_coords.lat},${booking.location_coords.lng}`}
                                   target="_blank"
@@ -713,20 +781,24 @@ export default function AdminPanel() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
             <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
               <Plus className="w-4 h-4 text-primary" />
-              Create Coupon
+              Create Global Coupon
             </h3>
             <div className="space-y-3">
               <input type="text" value={newCouponCode} onChange={(e) => setNewCouponCode(e.target.value.toUpperCase())} placeholder="Coupon Code (e.g., SAVE20)" className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-primary uppercase" />
-              <div className="flex gap-3">
-                <div className="flex-1 relative">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="relative">
                   <input type="number" value={newCouponDiscount} onChange={(e) => setNewCouponDiscount(e.target.value)} placeholder="Discount %" min="1" max="100" className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-primary pr-8" />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">%</span>
                 </div>
-                <button onClick={addCoupon} disabled={addingCoupon} className="px-6 py-3 bg-primary text-white rounded-xl text-sm font-bold disabled:opacity-60 flex items-center gap-2">
-                  {addingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                  Add
-                </button>
+                <div className="relative">
+                  <input type="number" value={newCouponLimit} onChange={(e) => setNewCouponLimit(e.target.value)} placeholder="Usage Limit" min="1" className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-primary pr-12" />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] font-bold uppercase">Uses</span>
+                </div>
               </div>
+              <button onClick={addCoupon} disabled={addingCoupon} className="w-full py-3 bg-primary text-white rounded-xl text-sm font-bold disabled:opacity-60 flex items-center justify-center gap-2">
+                {addingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Add Global Coupon
+              </button>
             </div>
           </div>
 
@@ -751,7 +823,10 @@ export default function AdminPanel() {
                     </div>
                     <div>
                       <h4 className="font-bold text-gray-900 text-sm tracking-wider">{coupon.code}</h4>
-                      <p className="text-xs text-gray-500">{coupon.discount_percent}% off {coupon.user_id ? '(User-specific)' : '(Global)'}</p>
+                      <div className="flex flex-col gap-0.5">
+                        <p className="text-[10px] text-gray-500">{coupon.discount_percent}% off {coupon.user_id ? '(User-specific)' : '(Global)'}</p>
+                        <p className="text-[10px] font-bold text-primary">Limit: {coupon.usage_limit || 1} uses</p>
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -858,6 +933,88 @@ export default function AdminPanel() {
                   {pushingNotification ? <Loader2 className="w-4 h-4 animate-spin" /> : <Bell className="w-4 h-4" />}
                   {pushingNotification ? 'Sending...' : 'Send to Everyone'}
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showConfigModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setShowConfigModal(false)}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white rounded-2xl p-6 w-full max-w-md my-8" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-gray-900">App Configuration</h3>
+                <button onClick={() => setShowConfigModal(false)} className="p-1"><X className="w-5 h-5 text-gray-400" /></button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Carousel Images */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4" /> Signup Carousel Images
+                  </h4>
+                  <div className="flex gap-2">
+                    <input type="text" value={newCarouselUrl} onChange={(e) => setNewCarouselUrl(e.target.value)} placeholder="Image URL" className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none" />
+                    <button
+                      onClick={async () => {
+                        if (!newCarouselUrl) return;
+                        const current = appConfig.signup_carousel?.images || [];
+                        const updated = [...current, newCarouselUrl];
+                        await adminAction({ action: 'update-app-config', key: 'signup_carousel', value: { images: updated } });
+                        setNewCarouselUrl('');
+                        fetchConfig();
+                        toast.success('Image added');
+                      }}
+                      className="p-2 bg-primary text-white rounded-xl"
+                    >
+                      <Plus className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(appConfig.signup_carousel?.images || []).map((img: string, i: number) => (
+                      <div key={i} className="relative aspect-video rounded-lg overflow-hidden border border-gray-100 group">
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                        <button
+                          onClick={async () => {
+                            const updated = (appConfig.signup_carousel.images as string[]).filter((_, idx) => idx !== i);
+                            await adminAction({ action: 'update-app-config', key: 'signup_carousel', value: { images: updated } });
+                            fetchConfig();
+                          }}
+                          className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Payment Config */}
+                <div className="space-y-3 pt-4 border-t border-gray-100">
+                  <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                    <QrCode className="w-4 h-4" /> Payment Details (UPI/QR)
+                  </h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-500 uppercase">UPI ID</label>
+                      <input type="text" value={upiId} onChange={(e) => setUpiId(e.target.value)} placeholder="e.g. urbanauto@okaxis" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none mt-1" />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-gray-500 uppercase">QR Code Image URL</label>
+                      <input type="text" value={qrCodeUrl} onChange={(e) => setQrCodeUrl(e.target.value)} placeholder="Image URL" className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none mt-1" />
+                    </div>
+                    <button
+                      onClick={async () => {
+                        await adminAction({ action: 'update-app-config', key: 'payment_config', value: { upi_id: upiId, qr_code_url: qrCodeUrl } });
+                        fetchConfig();
+                        toast.success('Payment config updated');
+                      }}
+                      className="w-full py-2.5 bg-green-600 text-white rounded-xl text-sm font-bold"
+                    >
+                      Save Payment Config
+                    </button>
+                  </div>
+                </div>
               </div>
             </motion.div>
           </motion.div>
