@@ -1,34 +1,73 @@
 workflows:
-  android-builds:
-    name: Urban Auto - AAB + APK (Debug + Release)
+  android-build:
+    name: Urban Auto - FINAL Signed Build
     max_build_duration: 120
 
     environment:
-      node: 22
+      node: 20
       java: 21
 
+    cache:
+      cache_paths:
+        - ~/.gradle/caches
+        - ~/.gradle/wrapper
+        - ~/.npm
+
     scripts:
-      - name: Install dependencies
+      - name: Install dependencies (clean)
         script: |
-          npm install
+          rm -rf node_modules package-lock.json
+          npm cache clean --force
+          npm install --legacy-peer-deps
 
       - name: Build Next.js
         script: |
           npm run build
 
-      - name: Sync Capacitor Android
+      - name: Ensure Android platform exists
+        script: |
+          if [ ! -d "android" ]; then
+            npx cap add android
+          fi
+
+      - name: Sync Capacitor
         script: |
           npx cap sync android
 
-      - name: Build Android (AAB + APK)
+      # ---- FIX GRADLE VERSION + CORRUPT WRAPPER ----
+      - name: Fix Gradle Wrapper (8.13 clean)
         script: |
           cd android
+          rm -rf gradle/wrapper
+          mkdir -p gradle/wrapper
+          curl -L https://services.gradle.org/distributions/gradle-8.13-bin.zip -o gradle-8.13-bin.zip
+          unzip -q gradle-8.13-bin.zip
+          gradle-8.13/bin/gradle wrapper --gradle-version 8.13
           chmod +x gradlew
-          ./gradlew bundleRelease
-          ./gradlew assembleDebug
+          cd ..
+
+      # ---- FIX ANDROID ICON RESOURCE ERROR ----
+      - name: Generate launcher icons safely
+        script: |
+          mkdir -p android/app/src/main/res/mipmap-anydpi-v26
+          mkdir -p android/app/src/main/res/mipmap-xxxhdpi
+          cp resources/IMG-20260210-WA0024.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png || true
+          cp resources/IMG-20260210-WA0024.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png || true
+
+      # ---- BUILD SIGNED RELEASE ----
+      - name: Build Signed AAB + APK
+        script: |
+          cd android
+          ./gradlew clean
           ./gradlew assembleRelease
+          ./gradlew bundleRelease
+
+      # ---- BUILD DEBUG APK FOR TESTING ----
+      - name: Build Debug APK
+        script: |
+          cd android
+          ./gradlew assembleDebug
 
     artifacts:
-      - android/app/build/outputs/bundle/release/*.aab
-      - android/app/build/outputs/apk/debug/*.apk
-      - android/app/build/outputs/apk/release/*.apk
+      - android/app/build/outputs/**/*.apk
+      - android/app/build/outputs/**/*.aab
