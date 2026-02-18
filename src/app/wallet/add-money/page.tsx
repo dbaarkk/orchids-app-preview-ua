@@ -93,8 +93,10 @@ export default function AddMoneyPage() {
             )}
           </div>
 
-          <div className="bg-primary/5 rounded-xl p-4 mb-6 border border-primary/10">
-            <p className="text-xs font-bold text-primary text-center">Share screenshot after paying</p>
+          <div className="mb-6 px-4">
+            <p className="text-xs font-medium text-gray-500 text-center leading-relaxed">
+              Share screenshot with us after paying to update your wallet balance
+            </p>
           </div>
 
           <button
@@ -138,7 +140,7 @@ export default function AddMoneyPage() {
                   <span className="text-sm font-bold text-gray-900">Phone Call</span>
                 </a>
                 <a
-                  href="https://wa.me/918889822220?text=Hi%2C%20I've%20made%20a%20payment%20for%20my%20UA%20Wallet.%20Here%20is%20the%20screenshot."
+                  href={`https://wa.me/918889822220?text=${encodeURIComponent(`Hi, I've made a payment for my UA Wallet. Here is the screenshot. My user id is ---${user.id}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex flex-col items-center gap-3 p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:bg-gray-100 transition-colors"
