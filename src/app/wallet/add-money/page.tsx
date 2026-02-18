@@ -140,7 +140,7 @@ export default function AddMoneyPage() {
                   <span className="text-sm font-bold text-gray-900">Phone Call</span>
                 </a>
                 <a
-                  href={`https://wa.me/918889822220?text=${encodeURIComponent(`Hi, I've made a payment for my UA Wallet. Here is the screenshot. My user id is ---${user.id}`)}`}
+                  href={`https://wa.me/918889822220?text=${encodeURIComponent(`Hi, I've made a payment for my UA Wallet. Here is the screenshot. My user id is ---${String(user.displayId || '').padStart(4, '0')}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex flex-col items-center gap-3 p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:bg-gray-100 transition-colors"

@@ -24,6 +24,7 @@ interface Profile {
   state: string;
   pincode: string;
   location_address: string;
+  display_id?: number;
   verified: boolean;
   blocked: boolean;
   wallet_balance: number;
@@ -301,7 +302,12 @@ export default function UserDetailPage() {
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-gray-900">{profile.full_name || 'Unknown'}</h2>
+                <h2 className="text-lg font-bold text-gray-900">
+                  {profile.full_name || 'Unknown'}
+                  <span className="ml-2 text-[11px] font-bold text-primary bg-primary/5 px-2 py-0.5 rounded-full border border-primary/10">
+                    ID = {profile.display_id ? String(profile.display_id).padStart(4, '0') : '----'}
+                  </span>
+                </h2>
                 {profile.blocked && <span className="px-2 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-full">BLOCKED</span>}
                 {!profile.blocked && profile.verified && <ShieldCheck className="w-4 h-4 text-green-500" />}
                 {!profile.blocked && !profile.verified && <span className="px-2 py-0.5 bg-yellow-100 text-yellow-700 text-[10px] font-bold rounded-full">UNVERIFIED</span>}

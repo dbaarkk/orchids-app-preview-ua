@@ -13,6 +13,7 @@ export interface UserAddress {
 
 export interface User {
     id: string;
+    displayId?: number;
     name: string;
     email: string;
     phone: string;
@@ -81,6 +82,7 @@ function formatAddress(addr?: UserAddress): string {
 function mapProfileToUser(profile: any): User {
   return {
     id: profile.id,
+    displayId: profile.display_id,
     name: profile.full_name || '',
     email: profile.email || '',
     phone: profile.phone || '',

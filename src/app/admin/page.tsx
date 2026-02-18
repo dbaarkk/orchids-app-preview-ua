@@ -45,6 +45,7 @@ interface Profile {
   state: string;
   pincode: string;
   location_address: string;
+  display_id?: number;
   verified: boolean;
   blocked: boolean;
   wallet_balance: number;
@@ -696,10 +697,14 @@ export default function AdminPanel() {
             profiles.filter(p => {
               if (!userSearch.trim()) return true;
               const q = userSearch.toLowerCase();
+              const displayIdStr = p.display_id ? String(p.display_id).padStart(4, '0') : '';
+              const fullIdStr = `id = ${displayIdStr}`.toLowerCase();
               return (p.full_name || '').toLowerCase().includes(q) ||
                 (p.email || '').toLowerCase().includes(q) ||
                 (p.phone || '').toLowerCase().includes(q) ||
-                (p.city || '').toLowerCase().includes(q);
+                (p.city || '').toLowerCase().includes(q) ||
+                displayIdStr.includes(q) ||
+                fullIdStr.includes(q);
             }).map((profile) => (
               <motion.div
                 key={profile.id}
@@ -717,7 +722,12 @@ export default function AdminPanel() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-gray-900 text-sm truncate">{profile.full_name || 'Unknown'}</h3>
+                        <h3 className="font-bold text-gray-900 text-sm truncate">
+                          {profile.full_name || 'Unknown'}
+                          <span className="ml-1.5 text-[10px] font-bold text-primary bg-primary/5 px-1.5 py-0.5 rounded border border-primary/10 uppercase">
+                            ID = {profile.display_id ? String(profile.display_id).padStart(4, '0') : '----'}
+                          </span>
+                        </h3>
                         {profile.blocked && <span className="px-1.5 py-0.5 bg-red-100 text-red-600 text-[9px] font-bold rounded shrink-0">BLOCKED</span>}
                         {!profile.blocked && profile.verified && <ShieldCheck className="w-3.5 h-3.5 text-green-500 shrink-0" />}
                         {!profile.blocked && !profile.verified && <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-[9px] font-bold rounded shrink-0">UNVERIFIED</span>}
