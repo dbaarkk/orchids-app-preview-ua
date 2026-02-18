@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { services } from '@/lib/services-data';
-import { ArrowLeft, Loader2, Ticket, Check, X, Edit3, CreditCard, Clock, HelpCircle, Copy, ChevronLeft, ChevronRight, Wallet } from 'lucide-react';
+import { ArrowLeft, Loader2, Ticket, Check, X, Edit3, Clock, HelpCircle, Copy, ChevronLeft, ChevronRight, Wallet } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import AddressForm from '@/components/AddressForm';
@@ -32,7 +32,6 @@ export default function BookingSummaryPage() {
 
   const [submitting, setSubmitting] = useState(false);
   const [bookingDone, setBookingDone] = useState(false);
-  const [showRazorpayPopup, setShowRazorpayPopup] = useState(false);
   const [showInsufficientPopup, setShowInsufficientPopup] = useState(false);
 
     const [offers, setOffers] = useState<OfferCoupon[]>([]);
@@ -170,15 +169,10 @@ export default function BookingSummaryPage() {
 
 
 
-  const submitBooking = async (paymentMethod: 'razorpay' | 'pay_later' | 'wallet') => {
+  const submitBooking = async (paymentMethod: 'pay_later' | 'wallet') => {
     if (submitting || bookingDone) return;
     if (!user?.locationAddress) {
       toast.error('Please set your service address');
-      return;
-    }
-
-    if (paymentMethod === 'razorpay') {
-      setShowRazorpayPopup(true);
       return;
     }
 
@@ -401,16 +395,6 @@ export default function BookingSummaryPage() {
           />
         )}
 
-        {/* Cancellation Note */}
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-start gap-3">
-          <div className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center mt-0.5">
-            <HelpCircle className="w-4 h-4 text-gray-400" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-900">Cancellation fees applied</p>
-            <p className="text-xs text-gray-500 mt-0.5">Cancellation charges may apply once the booking is confirmed. Please review our cancellation policy for details.</p>
-          </div>
-        </div>
 
         {/* Offers for you */}
         <div>
@@ -530,15 +514,6 @@ export default function BookingSummaryPage() {
           <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider px-1">Choose Payment Method</h3>
 
           <button
-            onClick={() => submitBooking('razorpay')}
-            disabled={submitting || bookingDone}
-            className="w-full bg-[#072654] text-white py-4 rounded-xl font-semibold text-sm hover:bg-[#0a3270] transition-all disabled:opacity-60 flex items-center justify-center gap-3"
-          >
-            <CreditCard className="w-5 h-5" />
-            Pay with Razorpay
-          </button>
-
-          <button
             onClick={() => submitBooking('pay_later')}
             disabled={submitting || bookingDone}
             className="w-full bg-white border-2 border-gray-200 text-gray-900 py-4 rounded-xl font-semibold text-sm hover:bg-gray-50 transition-all disabled:opacity-60 flex items-center justify-center gap-3"
@@ -574,41 +549,6 @@ export default function BookingSummaryPage() {
 
         <div className="h-10" />
       </div>
-
-      {/* Razorpay Popup */}
-      <AnimatePresence>
-        {showRazorpayPopup && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowRazorpayPopup(false)}
-          >
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-2xl p-6 w-full max-w-sm text-center"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CreditCard className="w-7 h-7 text-amber-600" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">Online Payments Unavailable</h3>
-              <p className="text-sm text-gray-500 leading-relaxed mb-5">
-                We are unable to process online payments at the moment. Please use wallet money or pay after service completion.
-              </p>
-              <button
-                onClick={() => setShowRazorpayPopup(false)}
-                className="w-full bg-primary text-white py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors"
-              >
-                Got it
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-        </AnimatePresence>
 
         {/* Insufficient Balance Popup */}
         <AnimatePresence>
