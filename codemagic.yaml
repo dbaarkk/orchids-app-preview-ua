@@ -1,27 +1,31 @@
 workflows:
-  android-build:
-    name: Urban Auto - FINAL Signed Build
+  android-builds:
+    name: Urban Auto - FINAL Signed Build (All APKs + AAB)
     max_build_duration: 120
 
     environment:
-      node: 20
+      node: 22
       java: 21
+      groups:
+        - supabase
 
     cache:
       cache_paths:
-        - ~/.gradle/caches
-        - ~/.gradle/wrapper
         - ~/.npm
+        - node_modules
+        - .next/cache
+        - android/.gradle
+        - ~/.gradle
 
     scripts:
-      - name: Install dependencies (clean)
+
+      - name: Install dependencies
         script: |
-          rm -rf node_modules package-lock.json
-          npm cache clean --force
           npm install --legacy-peer-deps
 
       - name: Build Next.js
         script: |
+          export NEXT_TELEMETRY_DISABLED=1
           npm run build
 
       - name: Ensure Android platform exists
@@ -34,40 +38,33 @@ workflows:
         script: |
           npx cap sync android
 
-      # ---- FIX GRADLE VERSION + CORRUPT WRAPPER ----
-      - name: Fix Gradle Wrapper (8.13 clean)
+      - name: Generate Android icons
+        script: |
+          npx @capacitor/assets generate --android
+
+      - name: Fix Gradle Wrapper (8.13)
         script: |
           cd android
           rm -rf gradle/wrapper
-          mkdir -p gradle/wrapper
-          curl -L https://services.gradle.org/distributions/gradle-8.13-bin.zip -o gradle-8.13-bin.zip
-          unzip -q gradle-8.13-bin.zip
-          gradle-8.13/bin/gradle wrapper --gradle-version 8.13
+          gradle wrapper --gradle-version 8.13
           chmod +x gradlew
           cd ..
 
-      # ---- FIX ANDROID ICON RESOURCE ERROR ----
-      - name: Generate launcher icons safely
+      # ---- BUILD ALL ----
+      - name: Build Debug APK
         script: |
-          mkdir -p android/app/src/main/res/mipmap-anydpi-v26
-          mkdir -p android/app/src/main/res/mipmap-xxxhdpi
-          cp resources/IMG-20260210-WA0024.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png || true
-          cp resources/IMG-20260210-WA0024.png android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png || true
+          cd android
+          ./gradlew assembleDebug
+          cd ..
 
-      # ---- BUILD SIGNED RELEASE ----
-      - name: Build Signed AAB + APK
+      - name: Build Release APK + AAB (Signed)
         script: |
           cd android
           ./gradlew clean
           ./gradlew assembleRelease
           ./gradlew bundleRelease
 
-      # ---- BUILD DEBUG APK FOR TESTING ----
-      - name: Build Debug APK
-        script: |
-          cd android
-          ./gradlew assembleDebug
-
     artifacts:
-      - android/app/build/outputs/**/*.apk
-      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/apk/debug/*.apk
+      - android/app/build/outputs/apk/release/*.apk
+      - android/app/build/outputs/bundle/release/*.aab
