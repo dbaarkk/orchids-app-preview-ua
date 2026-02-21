@@ -16,7 +16,7 @@ jobs:
         with:
           node-version: 20
 
-      - run: npm install
+      - run: npm install --legacy-peer-deps
       - run: npx cap sync android
 
       - name: Decode keystore
