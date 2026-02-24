@@ -112,11 +112,25 @@ export default function UserDetailPage() {
   const [manualLocation, setManualLocation] = useState('');
   const [updatingLocation, setUpdatingLocation] = useState(false);
 
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteCountdown, setDeleteCountdown] = useState(3);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     if (profile?.manual_location_link) {
       setManualLocation(profile.manual_location_link);
     }
   }, [profile]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showDeleteModal && deleteCountdown > 0) {
+      timer = setInterval(() => {
+        setDeleteCountdown(prev => prev - 1);
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [showDeleteModal, deleteCountdown]);
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -231,6 +245,19 @@ export default function UserDetailPage() {
       setProfile(fresh.profile);
     } catch { toast.error('Action failed'); }
     setActionLoading(null);
+  };
+
+  const handleDeleteUser = async () => {
+    setIsDeleting(true);
+    try {
+      await adminAction({ action: 'delete-user', userId });
+      toast.success('User deleted successfully');
+      router.push('/admin');
+    } catch {
+      toast.error('Failed to delete user');
+      setIsDeleting(false);
+      setShowDeleteModal(false);
+    }
   };
 
   const updateManualLocation = async () => {
@@ -392,11 +419,10 @@ export default function UserDetailPage() {
             )}
             {profile.verified && !profile.blocked && (
               <button
-                onClick={() => handleAction('unverify-user')}
-                disabled={actionLoading === 'unverify-user'}
-                className="flex items-center gap-1.5 px-3 py-2 bg-yellow-100 rounded-lg text-xs font-semibold text-yellow-700 hover:bg-yellow-200 transition-colors disabled:opacity-60"
+                onClick={() => { setShowDeleteModal(true); setDeleteCountdown(3); }}
+                className="flex items-center gap-1.5 px-3 py-2 bg-red-500 rounded-lg text-xs font-semibold text-white hover:bg-red-600 transition-colors"
               >
-                {actionLoading === 'unverify-user' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldX className="w-3.5 h-3.5" />} Revoke
+                <Trash2 className="w-3.5 h-3.5" /> Delete
               </button>
             )}
             {!profile.blocked ? (
@@ -694,6 +720,39 @@ export default function UserDetailPage() {
           )}
         </div>
       </div>
+
+      <AnimatePresence>
+        {showDeleteModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => !isDeleting && setShowDeleteModal(false)}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-bold text-gray-900 text-center mb-2">Delete User?</h3>
+              <p className="text-sm text-gray-500 text-center mb-6">
+                Are you sure you want to delete this user? All their bookings and data will be permanently wiped out.
+              </p>
+              <div className="space-y-3">
+                <button
+                  onClick={handleDeleteUser}
+                  disabled={deleteCountdown > 0 || isDeleting}
+                  className="w-full py-3 bg-red-600 text-white rounded-xl text-sm font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                  {deleteCountdown > 0 ? `Delete (${deleteCountdown}s)` : 'Delete Now'}
+                </button>
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  disabled={isDeleting}
+                  className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-200 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {showPasswordModal && (

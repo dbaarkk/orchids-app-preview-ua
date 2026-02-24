@@ -546,7 +546,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
 
       if (data && data[0]) {
-        setBookings(prev => [mapBooking(data[0]), ...prev]);
+        const newBooking = mapBooking(data[0]);
+        setBookings(prev => {
+          if (prev.some(b => b.id === newBooking.id)) return prev;
+          return [newBooking, ...prev];
+        });
       }
 
       return { success: true };

@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useNativeNotifications } from '@/hooks/useNativeNotifications';
-import { ArrowLeft, User, Mail, Phone, MapPin, LogOut, ChevronRight, HelpCircle, Info, KeyRound, Eye, EyeOff, X, Loader2, Wallet, Shield } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, MapPin, LogOut, ChevronRight, HelpCircle, Info, KeyRound, Eye, EyeOff, X, Loader2, Wallet, Shield, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useRef } from 'react';
 import { toast } from 'sonner';
@@ -294,6 +294,16 @@ export default function ProfilePage() {
                 <LogOut className="w-5 h-5 text-red-600" />
               </div>
               <span className="flex-1 text-left text-sm font-medium text-red-600">Logout</span>
+              <ChevronRight className="w-5 h-5 text-gray-400" />
+            </button>
+            <button
+              onClick={() => router.push('/profile/delete-account')}
+              className="w-full flex items-center gap-3 p-4 hover:bg-red-50 transition-colors"
+            >
+              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="w-5 h-5 text-red-600" />
+              </div>
+              <span className="flex-1 text-left text-sm font-medium text-red-600">Delete Account</span>
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </button>
           </div>

@@ -4,9 +4,10 @@ const config: CapacitorConfig = {
   appId: 'com.urbanauto.app',
   appName: 'Urban Auto',
   webDir: 'out',
-  server: {
-    url: 'https://app.theurbanauto.com',
-    cleartext: false
+  plugins: {
+    PushNotifications: {
+      presentationOptions: ["badge", "sound", "alert"]
+    }
   }
 };
 

@@ -121,6 +121,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
+    if (action === 'delete-user') {
+      if (!userId) return NextResponse.json({ error: 'User ID required' }, { status: 400 });
+      const { error } = await adminClient.auth.admin.deleteUser(userId);
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ success: true });
+    }
+
     if (action === 'block-user') {
       if (!userId) return NextResponse.json({ error: 'User ID required' }, { status: 400 });
       const { error } = await adminClient.from('profiles').update({ blocked: true }).eq('id', userId);
