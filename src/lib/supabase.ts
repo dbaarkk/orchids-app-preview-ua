@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = "https://pfvdqlmivraggxzsbymv.supabase.co";
+const supabaseAnonKey = "sb_publishable_GH7jXDuB_yY-e9elC8SNpQ_2o5_1E3s";
 
 const isNative = typeof window !== 'undefined' && !!(window as any).Capacitor?.isNativePlatform?.();
 
