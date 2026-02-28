@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
 
     setLoading(true);
     try {
-      const checkRes = await fetch('/api/auth/check-exists', {
+      const checkRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/check-exists`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: '', phone }),
@@ -51,7 +51,7 @@ export default function ForgotPasswordPage() {
         return;
       }
 
-      const res = await fetch('/api/auth/send-otp', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/send-otp`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
@@ -107,7 +107,7 @@ export default function ForgotPasswordPage() {
 
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/verify-otp', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/verify-otp`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, code }),
@@ -141,7 +141,7 @@ export default function ForgotPasswordPage() {
 
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/reset-password', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/reset-password`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, newPassword }),

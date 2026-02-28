@@ -35,7 +35,7 @@ export default function SignupPage() {
   const [carouselImages, setCarouselImages] = useState<string[]>([]);
 
   useEffect(() => {
-    fetch('/api/admin?resource=app-config')
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin?resource=app-config`)
       .then(res => res.json())
       .then(data => {
         if (data.data?.signup_carousel?.images) {
@@ -104,7 +104,7 @@ export default function SignupPage() {
   const sendOtp = async () => {
     setOtpSending(true);
     try {
-      const res = await fetch('/api/auth/send-otp', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/send-otp`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
@@ -127,7 +127,7 @@ export default function SignupPage() {
 
     setOtpSending(true);
     try {
-      const checkRes = await fetch('/api/auth/check-exists', {
+      const checkRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/check-exists`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
@@ -182,7 +182,7 @@ export default function SignupPage() {
 
     setOtpVerifying(true);
     try {
-      const verifyRes = await fetch('/api/auth/verify-otp', {
+      const verifyRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/verify-otp`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone, code }),
@@ -205,7 +205,7 @@ export default function SignupPage() {
 
     setLoading(true);
     try {
-      const checkRes = await fetch('/api/auth/check-exists', {
+      const checkRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/check-exists`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),

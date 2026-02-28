@@ -70,7 +70,7 @@ export default function BookingSummaryPage() {
     if (!user) return;
     setOffersLoading(true);
     try {
-      const res = await fetch(`/api/coupons/offers?userId=${user.id}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/coupons/offers?userId=${user.id}`);
       const data = await res.json();
       if (data.offers) setOffers(data.offers);
     } catch {}
@@ -128,7 +128,7 @@ export default function BookingSummaryPage() {
     }
     setCouponLoading(true);
     try {
-      const res = await fetch('/api/coupons/validate', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/coupons/validate`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: codeToApply, userId: user.id }),

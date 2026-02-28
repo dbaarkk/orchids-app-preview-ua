@@ -71,14 +71,14 @@ interface Coupon {
 
 async function adminFetch(resource: string, params?: Record<string, string>) {
   const query = new URLSearchParams({ resource, ...params });
-  const res = await fetch(`/api/admin?${query}`);
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin?${query}`);
   const json = await res.json();
   if (!res.ok) throw new Error(json.error);
   return json;
 }
 
 async function adminAction(body: any) {
-  const res = await fetch('/api/admin', {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin`,  {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),

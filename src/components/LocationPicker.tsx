@@ -158,7 +158,7 @@ export default function LocationPicker({ onSelect, onClose, initialCoords, initi
 
   const performReverseGeocode = async (c: { lat: number; lng: number }) => {
     try {
-      const res = await fetch(`/api/location/reverse-geocode?lat=${c.lat}&lng=${c.lng}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/location/reverse-geocode?lat=${c.lat}&lng=${c.lng}`);
       const data = await res.json();
       if (data.status === 'OK' && data.results && data.results[0]) {
         setAddress(data.results[0].formatted_address);

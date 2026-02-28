@@ -322,7 +322,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginWithPhone = useCallback(async (phone: string) => {
     try {
-      const res = await fetch('/api/auth/phone-login', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/phone-login`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ phone }),
@@ -364,7 +364,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = useCallback(async (name: string, email: string, phone: string, password: string) => {
     try {
-      const response = await fetch('/api/auth/signup', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/signup`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, phone, password, otpVerified: true }),
@@ -564,7 +564,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!current) return { success: false, error: 'Not logged in' };
 
     try {
-      const response = await fetch('/api/bookings/cancel', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/bookings/cancel`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bookingId, userId: current.id }),

@@ -15,7 +15,7 @@ export default function AddMoneyPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    fetch('/api/admin?resource=app-config')
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin?resource=app-config`)
       .then(res => res.json())
       .then(data => setConfig(data.data))
       .catch(() => {});

@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
-import { FiCircle, FiCode, FiFileText, FiLayers, FiLayout } from 'react-icons/fi';
 import './Carousel.css';
 
 export interface CarouselItem {
@@ -111,7 +110,7 @@ export default function Carousel({
 
     const timer = setInterval(() => {
       setPosition(prev => {
-        if (!loop && prev >= itemsForRender.length - 1) return 0; // Reset to start if not looping? Or stay at end?
+        if (!loop && prev >= itemsForRender.length - 1) return 0;
         return (prev + 1) % itemsForRender.length;
       });
     }, autoplayDelay);
@@ -170,7 +169,6 @@ export default function Carousel({
     }
 
     setIsAnimating(false);
-
   };
 
   const handleDragEnd = (_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo): void => {
@@ -189,7 +187,6 @@ export default function Carousel({
       const max = itemsForRender.length - 1;
       return Math.max(0, Math.min(next, max));
     });
-
   };
 
   const dragProps = loop

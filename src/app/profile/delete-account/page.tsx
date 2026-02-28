@@ -34,7 +34,7 @@ export default function DeleteAccountPage() {
 
     setIsDeleting(true);
     try {
-      const response = await fetch('/api/auth/delete-account', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/delete-account`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id }),
