@@ -1,20 +1,22 @@
 workflows:
   android-live-build:
-    name: Urban Auto - Stable Live Build
+    name: Urban Auto - Clean Stable Build
     max_build_duration: 120
 
     environment:
       node: 20
       java: 21
 
-    cache:
-      cache_paths:
-        - ~/.npm
-        - ~/.gradle/caches
-        - ~/.gradle/wrapper
-
     scripts:
-      - name: Install dependencies (peer safe)
+
+      - name: Hard Clean
+        script: |
+          rm -rf node_modules
+          rm -rf package-lock.json
+          rm -rf android
+          npm cache clean --force
+
+      - name: Install Dependencies (peer safe)
         script: |
           npm install --legacy-peer-deps
 
@@ -22,14 +24,16 @@ workflows:
         script: |
           npm run build
 
-      - name: Sync Capacitor
+      - name: Add Android Platform Fresh
         script: |
+          npx cap add android
           npx cap sync android
 
-      - name: Ensure Gradle 8.13
+      - name: Fix Gradle Wrapper (force 8.13)
         script: |
           cd android
-          sed -i 's/gradle-.*-bin.zip/gradle-8.13-bin.zip/g' gradle/wrapper/gradle-wrapper.properties
+          rm -rf gradle/wrapper
+          gradle wrapper --gradle-version 8.13
           chmod +x gradlew
           cd ..
 
