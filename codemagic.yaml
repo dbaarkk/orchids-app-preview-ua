@@ -1,34 +1,50 @@
 workflows:
-  android-builds:
-    name: Urban Auto - AAB + APK (Debug + Release)
+  android-live-build:
+    name: Urban Auto - Stable Live Build
     max_build_duration: 120
 
     environment:
-      node: 22
+      node: 20
       java: 21
 
+    cache:
+      cache_paths:
+        - ~/.npm
+        - ~/.gradle/caches
+        - ~/.gradle/wrapper
+
     scripts:
-      - name: Install dependencies
+      - name: Install dependencies (peer safe)
         script: |
-          npm install
+          npm install --legacy-peer-deps
 
       - name: Build Next.js
         script: |
           npm run build
 
-      - name: Sync Capacitor Android
+      - name: Sync Capacitor
         script: |
           npx cap sync android
 
-      - name: Build Android (AAB + APK)
+      - name: Ensure Gradle 8.13
         script: |
           cd android
+          sed -i 's/gradle-.*-bin.zip/gradle-8.13-bin.zip/g' gradle/wrapper/gradle-wrapper.properties
           chmod +x gradlew
-          ./gradlew bundleRelease
-          ./gradlew assembleDebug
+          cd ..
+
+      - name: Build Release APK + AAB
+        script: |
+          cd android
+          ./gradlew clean
           ./gradlew assembleRelease
+          ./gradlew bundleRelease
+
+      - name: Build Debug APK
+        script: |
+          cd android
+          ./gradlew assembleDebug
 
     artifacts:
-      - android/app/build/outputs/bundle/release/*.aab
-      - android/app/build/outputs/apk/debug/*.apk
-      - android/app/build/outputs/apk/release/*.apk
+      - android/app/build/outputs/**/*.apk
+      - android/app/build/outputs/**/*.aab
