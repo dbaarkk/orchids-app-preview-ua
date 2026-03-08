@@ -282,7 +282,7 @@ export default function UserDetailPage() {
     }
     setPasswordLoading(true);
     try {
-      await adminAction({ action: 'reset-password', userId, password: newPassword });
+      await adminAction({ action: 'reset-pin', userId, password: newPassword });
       toast.success('Pin reset successfully');
       setShowPasswordModal(false);
       setNewPassword('');

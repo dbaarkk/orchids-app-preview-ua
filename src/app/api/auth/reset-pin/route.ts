@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { formatPinAsPassword } from '@/lib/utils';
 
 export async function POST(request: Request) {
   try {
@@ -45,12 +46,12 @@ export async function POST(request: Request) {
 
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       profile.id,
-      { password: newPin }
+      { password: formatPinAsPassword(newPin) }
     );
 
     if (updateError) {
       console.error('Pin update error:', updateError);
-      return NextResponse.json({ error: 'Failed to update Pin' }, { status: 500 });
+      return NextResponse.json({ error: updateError.message || 'Failed to update Pin' }, { status: 400 });
     }
 
     return NextResponse.json({ success: true, email: profile.email });

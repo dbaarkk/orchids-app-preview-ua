@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import { supabase } from './supabase';
+import { formatPinAsPassword } from './utils';
 
 export interface UserAddress {
   line1: string;
@@ -289,7 +290,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const login = useCallback(async (email: string, password: string) => {
       try {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password: formatPinAsPassword(password)
+        });
         if (error) throw error;
 
         if (!data.session?.user) {
@@ -378,7 +382,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Signup failed');
 
-      const signInPromise = supabase.auth.signInWithPassword({ email, password });
+      const signInPromise = supabase.auth.signInWithPassword({
+        email,
+        password: formatPinAsPassword(password)
+      });
       const { data, error } = await signInPromise;
       if (error) throw error;
 
@@ -613,7 +620,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const updatePassword = useCallback(async (newPin: string) => {
       try {
-        const { error } = await supabase.auth.updateUser({ password: newPin });
+        const { error } = await supabase.auth.updateUser({
+          password: formatPinAsPassword(newPin)
+        });
         if (error) throw error;
         return { success: true };
       } catch (error: any) {

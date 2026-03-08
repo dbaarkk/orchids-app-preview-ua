@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+import { formatPinAsPassword } from '@/lib/utils';
 
 export async function POST(request: Request) {
   console.log('Signup request received');
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
     // Create user and auto-confirm email
     const { data: userData, error: userError } = await supabaseAdmin.auth.admin.createUser({
       email,
-      password,
+      password: formatPinAsPassword(password),
       email_confirm: true,
       user_metadata: { full_name: name, phone: phone }
     });

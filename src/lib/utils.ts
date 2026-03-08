@@ -29,3 +29,12 @@ export function getAssetPath(path: string) {
   // In standard web environment, just return the normalized absolute path
   return normalized
 }
+
+export function formatPinAsPassword(pin: string) {
+  if (!pin) return pin;
+  // If it's a 4-digit PIN, prefix it to meet Supabase's password requirements
+  if (/^\d{4}$/.test(pin)) {
+    return `UA_PIN_${pin}`;
+  }
+  return pin;
+}

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest, NextResponse } from 'next/server';
 import { sendPushNotification } from '@/lib/fcm';
+import { formatPinAsPassword } from '@/lib/utils';
 
 function getAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -116,7 +117,9 @@ export async function POST(request: Request) {
       if (!userId || !password || !/^\d{4}$/.test(password)) {
         return NextResponse.json({ error: 'User ID and 4-digit Pin required' }, { status: 400 });
       }
-      const { error } = await adminClient.auth.admin.updateUserById(userId, { password });
+      const { error } = await adminClient.auth.admin.updateUserById(userId, {
+        password: formatPinAsPassword(password)
+      });
       if (error) return NextResponse.json({ error: error.message }, { status: 400 });
       return NextResponse.json({ success: true });
     }
