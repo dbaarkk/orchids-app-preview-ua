@@ -109,16 +109,16 @@ export async function GET(request: NextRequest) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { action, userId, password, amount, description, couponCode, couponDiscount, couponUserId } = body;
+    const { action, userId, pin, amount, description, couponCode, couponDiscount, couponUserId } = body;
 
     const adminClient = getAdminClient();
 
     if (action === 'reset-pin') {
-      if (!userId || !password || !/^\d{4}$/.test(password)) {
+      if (!userId || !pin || !/^\d{4}$/.test(pin)) {
         return NextResponse.json({ error: 'User ID and 4-digit Pin required' }, { status: 400 });
       }
       const { error } = await adminClient.auth.admin.updateUserById(userId, {
-        password: formatPinAsPassword(password)
+        password: formatPinAsPassword(pin)
       });
       if (error) return NextResponse.json({ error: error.message }, { status: 400 });
       return NextResponse.json({ success: true });

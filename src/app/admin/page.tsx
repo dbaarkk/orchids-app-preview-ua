@@ -91,7 +91,7 @@ async function adminAction(body: any) {
 }
 
 export default function AdminPanel() {
-  const { user, isLoading, isAdmin, logout, updatePassword } = useAuth();
+  const { user, isLoading, isAdmin, logout, updatePin } = useAuth();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<'bookings' | 'users' | 'services' | 'coupons'>('bookings');
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
@@ -103,11 +103,11 @@ export default function AdminPanel() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'Pending' | 'Confirmed' | 'Completed' | 'Rescheduled' | 'Cancelled'>('all');
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [newPin, setNewPin] = useState('');
+  const [confirmNewPin, setConfirmNewPin] = useState('');
+  const [showNewPin, setShowNewPin] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
   const [editingPrice, setEditingPrice] = useState<string | null>(null);
   const [priceForm, setPriceForm] = useState({ sedan: '', hatchback: '', suv: '', luxury: '' });
   const [quoteMode, setQuoteMode] = useState({ sedan: false, hatchback: false, suv: false, luxury: false });
@@ -300,24 +300,24 @@ export default function AdminPanel() {
     navigator.clipboard.writeText(details).then(() => toast.success('Copied')).catch(() => toast.error('Failed to copy'));
   };
 
-  const handlePasswordReset = async () => {
-    if (!newPassword || !/^\d{4}$/.test(newPassword)) {
+  const handlePinReset = async () => {
+    if (!newPin || !/^\d{4}$/.test(newPin)) {
       toast.error('Pin must be exactly 4 digits');
       return;
     }
-    if (newPassword !== confirmNewPassword) {
+    if (newPin !== confirmNewPin) {
       toast.error('Pins do not match');
       return;
     }
-    setPasswordLoading(true);
-    const result = await updatePassword(newPassword);
+    setPinLoading(true);
+    const result = await updatePin(newPin);
     if (result.success) {
       toast.success('Pin updated');
-      setShowPasswordModal(false);
-      setNewPassword('');
-      setConfirmNewPassword('');
+      setShowPinModal(false);
+      setNewPin('');
+      setConfirmNewPin('');
     } else toast.error(result.error || 'Failed');
-    setPasswordLoading(false);
+    setPinLoading(false);
   };
 
   const startEditPrice = (sp: ServicePrice) => {
@@ -460,7 +460,7 @@ export default function AdminPanel() {
             <button onClick={() => setShowPaymentModal(true)} className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors" title="Payment Details">
               <QrCode className="w-5 h-5" />
             </button>
-            <button onClick={() => setShowPasswordModal(true)} className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors" title="Reset Pin">
+            <button onClick={() => setShowPinModal(true)} className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors" title="Reset Pin">
               <KeyRound className="w-5 h-5" />
             </button>
             <button onClick={() => {
@@ -891,48 +891,48 @@ export default function AdminPanel() {
       )}
 
       <AnimatePresence>
-        {showPasswordModal && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowPasswordModal(false)}>
+        {showPinModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowPinModal(false)}>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-gray-900">Reset Pin</h3>
-                <button onClick={() => setShowPasswordModal(false)} className="p-1"><X className="w-5 h-5 text-gray-400" /></button>
+                <button onClick={() => setShowPinModal(false)} className="p-1"><X className="w-5 h-5 text-gray-400" /></button>
               </div>
               <div className="space-y-4">
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-1.5 block">New Pin</label>
                   <div className="relative">
                     <input
-                      type={showNewPassword ? 'text' : 'password'}
+                      type={showNewPin ? 'text' : 'password'}
                       inputMode="numeric"
                       pattern="[0-9]*"
                       maxLength={4}
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      value={newPin}
+                      onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
                       placeholder="4 digits"
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm pr-11"
                     />
-                    <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                      {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    <button type="button" onClick={() => setShowNewPin(!showNewPin)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      {showNewPin ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-700 mb-1.5 block">Confirm Pin</label>
                   <input
-                    type="password"
+                    type={showNewPin ? 'text' : 'password'}
                     inputMode="numeric"
                     pattern="[0-9]*"
                     maxLength={4}
-                    value={confirmNewPassword}
-                    onChange={(e) => setConfirmNewPassword(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    value={confirmNewPin}
+                    onChange={(e) => setConfirmNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
                     placeholder="Re-enter Pin"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm"
                   />
                 </div>
-                <button onClick={handlePasswordReset} disabled={passwordLoading} className="w-full bg-primary text-white py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-60 flex items-center justify-center gap-2">
-                  {passwordLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {passwordLoading ? 'Updating...' : 'Update Pin'}
+                <button onClick={handlePinReset} disabled={pinLoading} className="w-full bg-primary text-white py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-60 flex items-center justify-center gap-2">
+                  {pinLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {pinLoading ? 'Updating...' : 'Update Pin'}
                 </button>
               </div>
             </motion.div>

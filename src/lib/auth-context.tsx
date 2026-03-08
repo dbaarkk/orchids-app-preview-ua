@@ -54,9 +54,9 @@ export interface Booking {
 interface AuthContextType {
     user: User | null;
     isLoading: boolean;
-    login: (email: string, password: string) => Promise<{ success: boolean; error?: string; isAdmin?: boolean }>;
+    login: (email: string, pin: string) => Promise<{ success: boolean; error?: string; isAdmin?: boolean }>;
     loginWithPhone: (phone: string) => Promise<{ success: boolean; error?: string; isAdmin?: boolean }>;
-    signup: (name: string, email: string, phone: string, password: string) => Promise<{ success: boolean; error?: string; isAdmin?: boolean }>;
+    signup: (name: string, email: string, phone: string, pin: string) => Promise<{ success: boolean; error?: string; isAdmin?: boolean }>;
     logout: () => Promise<void>;
     bookings: Booking[];
     refreshBookings: () => Promise<void>;
@@ -65,7 +65,7 @@ interface AuthContextType {
     addBooking: (booking: any) => Promise<{ success: boolean; error?: string }>;
     cancelBooking: (bookingId: string) => Promise<{ success: boolean; error?: string }>;
     rescheduleBooking: (bookingId: string, newDateTime: string) => Promise<{ success: boolean; error?: string }>;
-    updatePassword: (newPassword: string) => Promise<{ success: boolean; error?: string }>;
+    updatePin: (newPin: string) => Promise<{ success: boolean; error?: string }>;
     refreshUser: () => Promise<void>;
     isAdmin: boolean;
   }
@@ -288,11 +288,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [user?.id]);
 
-    const login = useCallback(async (email: string, password: string) => {
+    const login = useCallback(async (email: string, pin: string) => {
       try {
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
-          password: formatPinAsPassword(password)
+          password: formatPinAsPassword(pin)
         });
         if (error) throw error;
 
@@ -366,12 +366,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const signup = useCallback(async (name: string, email: string, phone: string, password: string) => {
+  const signup = useCallback(async (name: string, email: string, phone: string, pin: string) => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/signup`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, phone, password, otpVerified: true }),
+        body: JSON.stringify({ name, email, phone, password: pin, otpVerified: true }),
       });
 
       const contentType = response.headers.get('content-type');
@@ -384,7 +384,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const signInPromise = supabase.auth.signInWithPassword({
         email,
-        password: formatPinAsPassword(password)
+        password: formatPinAsPassword(pin)
       });
       const { data, error } = await signInPromise;
       if (error) throw error;
@@ -618,7 +618,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-    const updatePassword = useCallback(async (newPin: string) => {
+    const updatePin = useCallback(async (newPin: string) => {
       try {
         const { error } = await supabase.auth.updateUser({
           password: formatPinAsPassword(newPin)
@@ -647,7 +647,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{
         user, isLoading, login, loginWithPhone, signup, logout, bookings, refreshBookings,
         updateAddress, updateLocation, addBooking, cancelBooking, rescheduleBooking,
-        updatePassword, refreshUser, isAdmin,
+        updatePin, refreshUser, isAdmin,
       }}>
       {children}
     </AuthContext.Provider>

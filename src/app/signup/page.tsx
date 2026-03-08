@@ -401,7 +401,7 @@ export default function SignupPage() {
           <div>
             <label className="text-sm font-medium text-gray-700 mb-1.5 block">Confirm Pin</label>
             <input
-              type="password"
+              type={showPin ? 'text' : 'password'}
               inputMode="numeric"
               pattern="[0-9]*"
               maxLength={4}

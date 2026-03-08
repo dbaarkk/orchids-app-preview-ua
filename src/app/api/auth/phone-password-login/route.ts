@@ -3,13 +3,13 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const { phone, password } = await request.json();
+    const { phone, pin } = await request.json();
 
     if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
       return NextResponse.json({ error: 'Please enter a valid 10-digit phone number' }, { status: 400 });
     }
 
-    if (!password) {
+    if (!pin) {
       return NextResponse.json({ error: 'Pin is required' }, { status: 400 });
     }
 

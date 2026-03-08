@@ -79,7 +79,7 @@ export default function LoginPage() {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/phone-password-login`,  {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone, password: pin }),
+          body: JSON.stringify({ phone, pin }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);

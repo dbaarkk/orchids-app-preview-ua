@@ -144,7 +144,7 @@ export default function ForgotPinPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/reset-pin`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, newPin }),
+        body: JSON.stringify({ phone, pin: newPin }),
       });
       const data = await res.json();
 

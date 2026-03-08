@@ -4,13 +4,13 @@ import { formatPinAsPassword } from '@/lib/utils';
 
 export async function POST(request: Request) {
   try {
-    const { phone, newPin } = await request.json();
+    const { phone, pin } = await request.json();
 
     if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
       return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 });
     }
 
-    if (!newPin || !/^\d{4}$/.test(newPin)) {
+    if (!pin || !/^\d{4}$/.test(pin)) {
       return NextResponse.json({ error: 'Pin must be exactly 4 digits' }, { status: 400 });
     }
 
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
 
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       profile.id,
-      { password: formatPinAsPassword(newPin) }
+      { password: formatPinAsPassword(pin) }
     );
 
     if (updateError) {

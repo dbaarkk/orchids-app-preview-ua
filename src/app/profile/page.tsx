@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { getAssetPath } from '@/lib/utils';
 
 export default function ProfilePage() {
-  const { user, isLoading, logout, bookings, updatePassword, refreshUser } = useAuth();
+  const { user, isLoading, logout, bookings, updatePin, refreshUser } = useAuth();
   const { registerNotifications } = useNativeNotifications();
   const router = useRouter();
   const [showPinModal, setShowPinModal] = useState(false);
@@ -162,7 +162,7 @@ export default function ProfilePage() {
       return;
     }
     setPinLoading(true);
-    const result = await updatePassword(newPin);
+    const result = await updatePin(newPin);
     if (result.success) {
       toast.success('Pin updated successfully');
       setShowPinModal(false);
@@ -467,7 +467,7 @@ export default function ProfilePage() {
                   <div>
                     <label className="text-sm font-medium text-gray-700 mb-1.5 block">Confirm Pin</label>
                     <input
-                      type="password"
+                      type={showNewPin ? 'text' : 'password'}
                       inputMode="numeric"
                       pattern="[0-9]*"
                       maxLength={4}
