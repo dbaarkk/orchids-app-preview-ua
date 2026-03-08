@@ -9,12 +9,10 @@ import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAssetPath } from '@/lib/utils';
 
-type LoginMode = 'email' | 'phone';
-
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState(''); // Email or Phone
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [pin, setPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [redirecting, setRedirecting] = useState(false);
@@ -54,7 +52,7 @@ export default function LoginPage() {
   const validate = () => {
     const newErrors: Record<string, string> = {};
     if (!identifier.trim()) newErrors.identifier = 'Email or phone is required';
-    if (!password) newErrors.password = 'Pin is required';
+    if (!pin) newErrors.pin = 'Pin is required';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -67,10 +65,10 @@ export default function LoginPage() {
     try {
       const isEmail = identifier.includes('@');
       let finalEmail = identifier;
-      let finalPassword = password;
+      let finalPin = pin;
 
       if (!isEmail) {
-        // Handle phone login with password
+        // Handle phone login with Pin
         const phone = identifier.replace(/\D/g, '');
         if (phone.length !== 10) {
           toast.error('Please enter a valid 10-digit phone number or email');
@@ -81,14 +79,14 @@ export default function LoginPage() {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/phone-password-login`,  {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone, password }),
+          body: JSON.stringify({ phone, password: pin }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
         finalEmail = data.email;
       }
 
-      const result = await login(finalEmail, finalPassword);
+      const result = await login(finalEmail, finalPin);
       if (result.success) {
         setRedirecting(true);
         toast.success('Login successful!');
@@ -341,29 +339,29 @@ export default function LoginPage() {
 
     <div className="relative">
       <input
-        type={showPassword ? 'text' : 'password'}
+        type={showPin ? 'text' : 'password'}
         inputMode="numeric"
         pattern="[0-9]*"
         maxLength={4}
-        value={password}
-        onChange={(e) => setPassword(e.target.value.replace(/\D/g, '').slice(0, 4))}
+        value={pin}
+        onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
         placeholder="Enter 4-digit Pin"
         className={`w-full px-4 py-3.5 rounded-xl border ${
-          errors.password ? 'border-red-400' : 'border-gray-200'
+          errors.pin ? 'border-red-400' : 'border-gray-200'
         } bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm pr-11`}
       />
 
       <button
         type="button"
-        onClick={() => setShowPassword(!showPassword)}
+        onClick={() => setShowPin(!showPin)}
         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
       >
-        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+        {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
       </button>
     </div>
 
-    {errors.password && (
-      <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+    {errors.pin && (
+      <p className="text-red-500 text-xs mt-1">{errors.pin}</p>
     )}
   </div>
 
@@ -378,8 +376,8 @@ export default function LoginPage() {
       Login with OTP
     </button>
 
-    <Link href="/forgot-password" className="text-xs text-primary font-medium hover:underline">
-      Forgot Password?
+    <Link href="/forgot-pin" className="text-xs text-primary font-medium hover:underline">
+      Forgot Pin?
     </Link>
   </div>
 

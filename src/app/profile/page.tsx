@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useNativeNotifications } from '@/hooks/useNativeNotifications';
-import { ArrowLeft, User, Mail, Phone, MapPin, LogOut, ChevronRight, HelpCircle, Info, KeyRound, Eye, EyeOff, X, Loader2, Wallet, Shield, Trash2 } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, MapPin, LogOut, ChevronRight, HelpCircle, Info, KeyRound, Eye, EyeOff, X, Loader2, Wallet, Shield, Trash2, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useRef } from 'react';
 import { toast } from 'sonner';
@@ -14,12 +14,12 @@ export default function ProfilePage() {
   const { user, isLoading, logout, bookings, updatePassword, refreshUser } = useAuth();
   const { registerNotifications } = useNativeNotifications();
   const router = useRouter();
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [passwordStep, setPasswordStep] = useState<'otp' | 'reset'>('otp');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmNewPassword, setConfirmNewPassword] = useState('');
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const [pinStep, setPinStep] = useState<'otp' | 'reset'>('otp');
+  const [newPin, setNewPin] = useState('');
+  const [confirmNewPin, setConfirmNewPin] = useState('');
+  const [showNewPin, setShowNewPin] = useState(false);
+  const [pinLoading, setPinLoading] = useState(false);
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpSending, setOtpSending] = useState(false);
@@ -54,12 +54,12 @@ export default function ProfilePage() {
     router.replace('/login');
   };
 
-  const openPasswordModal = async () => {
-    setShowPasswordModal(true);
-    setPasswordStep('otp');
+  const openPinModal = async () => {
+    setShowPinModal(true);
+    setPinStep('otp');
     setOtp(['', '', '', '', '', '']);
-    setNewPassword('');
-    setConfirmNewPassword('');
+    setNewPin('');
+    setConfirmNewPin('');
 
     if (user.phone) {
       setOtpSending(true);
@@ -144,7 +144,7 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error(data.error);
 
       toast.success('OTP verified!');
-      setPasswordStep('reset');
+      setPinStep('reset');
     } catch (err: any) {
       toast.error(err.message || 'Invalid or expired OTP');
     } finally {
@@ -152,26 +152,26 @@ export default function ProfilePage() {
     }
   };
 
-  const handlePasswordReset = async () => {
-    if (!newPassword || newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters');
+  const handlePinReset = async () => {
+    if (!newPin || !/^\d{4}$/.test(newPin)) {
+      toast.error('Pin must be exactly 4 digits');
       return;
     }
-    if (newPassword !== confirmNewPassword) {
-      toast.error('Passwords do not match');
+    if (newPin !== confirmNewPin) {
+      toast.error('Pins do not match');
       return;
     }
-    setPasswordLoading(true);
-    const result = await updatePassword(newPassword);
+    setPinLoading(true);
+    const result = await updatePassword(newPin);
     if (result.success) {
-      toast.success('Password updated successfully');
-      setShowPasswordModal(false);
-      setNewPassword('');
-      setConfirmNewPassword('');
+      toast.success('Pin updated successfully');
+      setShowPinModal(false);
+      setNewPin('');
+      setConfirmNewPin('');
     } else {
-      toast.error(result.error || 'Failed to update password');
+      toast.error(result.error || 'Failed to update Pin');
     }
-    setPasswordLoading(false);
+    setPinLoading(false);
   };
 
       const walletBalance = user.walletBalance ?? 0;
@@ -277,13 +277,13 @@ export default function ProfilePage() {
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </button>
             <button
-              onClick={openPasswordModal}
+              onClick={openPinModal}
               className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
             >
               <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
                 <KeyRound className="w-5 h-5 text-primary" />
               </div>
-              <span className="flex-1 text-left text-sm font-medium text-gray-900">Reset Password</span>
+              <span className="flex-1 text-left text-sm font-medium text-gray-900">Reset Pin</span>
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </button>
             <button
@@ -362,13 +362,13 @@ export default function ProfilePage() {
       </div>
 
       <AnimatePresence>
-        {showPasswordModal && (
+        {showPinModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
-            onClick={() => setShowPasswordModal(false)}
+            onClick={() => setShowPinModal(false)}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
@@ -378,13 +378,13 @@ export default function ProfilePage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900">Reset Password</h3>
-                <button onClick={() => setShowPasswordModal(false)} className="p-1">
+                <h3 className="text-lg font-bold text-gray-900">Reset Pin</h3>
+                <button onClick={() => setShowPinModal(false)} className="p-1">
                   <X className="w-5 h-5 text-gray-400" />
                 </button>
               </div>
 
-              {passwordStep === 'otp' && (
+              {pinStep === 'otp' && (
                 <div className="space-y-4">
                   <p className="text-sm text-gray-500">
                     Enter the 6-digit OTP sent to <span className="font-semibold text-gray-700">+91 {user.phone}</span>
@@ -431,7 +431,7 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {passwordStep === 'reset' && (
+              {pinStep === 'reset' && (
                 <div className="space-y-4">
                   <div className="bg-green-50 rounded-xl px-3 py-2 flex items-center gap-2">
                     <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
@@ -443,41 +443,47 @@ export default function ProfilePage() {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1.5 block">New Password</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1.5 block">New Pin</label>
                     <div className="relative">
                       <input
-                        type={showNewPassword ? 'text' : 'password'}
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="Min 8 characters"
+                        type={showNewPin ? 'text' : 'password'}
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={4}
+                        value={newPin}
+                        onChange={(e) => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                        placeholder="Enter 4-digit Pin"
                         className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm pr-11"
                       />
                       <button
                         type="button"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        onClick={() => setShowNewPin(!showNewPin)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
                       >
-                        {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        {showNewPin ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-gray-700 mb-1.5 block">Confirm Password</label>
+                    <label className="text-sm font-medium text-gray-700 mb-1.5 block">Confirm Pin</label>
                     <input
                       type="password"
-                      value={confirmNewPassword}
-                      onChange={(e) => setConfirmNewPassword(e.target.value)}
-                      placeholder="Re-enter new password"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={4}
+                      value={confirmNewPin}
+                      onChange={(e) => setConfirmNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="Re-enter new Pin"
                       className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm"
                     />
                   </div>
                   <button
-                    onClick={handlePasswordReset}
-                    disabled={passwordLoading}
+                    onClick={handlePinReset}
+                    disabled={pinLoading || newPin.length !== 4 || confirmNewPin.length !== 4}
                     className="w-full bg-primary text-white py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
                   >
-                    {passwordLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                    {passwordLoading ? 'Updating...' : 'Update Password'}
+                    {pinLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {pinLoading ? 'Updating...' : 'Update Pin'}
                   </button>
                 </div>
               )}

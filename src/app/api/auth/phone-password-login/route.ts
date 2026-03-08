@@ -10,7 +10,7 @@ export async function POST(request: Request) {
     }
 
     if (!password) {
-      return NextResponse.json({ error: 'Password is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Pin is required' }, { status: 400 });
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;

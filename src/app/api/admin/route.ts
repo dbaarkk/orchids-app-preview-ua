@@ -112,9 +112,9 @@ export async function POST(request: Request) {
 
     const adminClient = getAdminClient();
 
-    if (action === 'reset-password') {
-      if (!userId || !password || password.length < 8) {
-        return NextResponse.json({ error: 'User ID and password (min 8 chars) required' }, { status: 400 });
+    if (action === 'reset-pin') {
+      if (!userId || !password || !/^\d{4}$/.test(password)) {
+        return NextResponse.json({ error: 'User ID and 4-digit Pin required' }, { status: 400 });
       }
       const { error } = await adminClient.auth.admin.updateUserById(userId, { password });
       if (error) return NextResponse.json({ error: error.message }, { status: 400 });

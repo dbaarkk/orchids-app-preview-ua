@@ -3,14 +3,14 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
   try {
-    const { phone, newPassword } = await request.json();
+    const { phone, newPin } = await request.json();
 
     if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
       return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 });
     }
 
-    if (!newPassword || newPassword.length < 6) {
-      return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
+    if (!newPin || !/^\d{4}$/.test(newPin)) {
+      return NextResponse.json({ error: 'Pin must be exactly 4 digits' }, { status: 400 });
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -45,17 +45,17 @@ export async function POST(request: Request) {
 
     const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
       profile.id,
-      { password: newPassword }
+      { password: newPin }
     );
 
     if (updateError) {
-      console.error('Password update error:', updateError);
-      return NextResponse.json({ error: 'Failed to update password' }, { status: 500 });
+      console.error('Pin update error:', updateError);
+      return NextResponse.json({ error: 'Failed to update Pin' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, email: profile.email });
   } catch (error: any) {
-    console.error('Reset password error:', error);
+    console.error('Reset Pin API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -611,13 +611,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-    const updatePassword = useCallback(async (newPassword: string) => {
+    const updatePassword = useCallback(async (newPin: string) => {
       try {
-        const { error } = await supabase.auth.updateUser({ password: newPassword });
+        const { error } = await supabase.auth.updateUser({ password: newPin });
         if (error) throw error;
         return { success: true };
       } catch (error: any) {
-        return { success: false, error: error.message || 'Failed to update password' };
+        return { success: false, error: error.message || 'Failed to update Pin' };
       }
     }, []);
 

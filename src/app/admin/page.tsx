@@ -301,12 +301,18 @@ export default function AdminPanel() {
   };
 
   const handlePasswordReset = async () => {
-    if (!newPassword || newPassword.length < 8) { toast.error('Password must be at least 8 characters'); return; }
-    if (newPassword !== confirmNewPassword) { toast.error('Passwords do not match'); return; }
+    if (!newPassword || !/^\d{4}$/.test(newPassword)) {
+      toast.error('Pin must be exactly 4 digits');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      toast.error('Pins do not match');
+      return;
+    }
     setPasswordLoading(true);
     const result = await updatePassword(newPassword);
     if (result.success) {
-      toast.success('Password updated');
+      toast.success('Pin updated');
       setShowPasswordModal(false);
       setNewPassword('');
       setConfirmNewPassword('');
@@ -454,7 +460,7 @@ export default function AdminPanel() {
             <button onClick={() => setShowPaymentModal(true)} className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors" title="Payment Details">
               <QrCode className="w-5 h-5" />
             </button>
-            <button onClick={() => setShowPasswordModal(true)} className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors" title="Reset Password">
+            <button onClick={() => setShowPasswordModal(true)} className="p-2 bg-white/20 rounded-full hover:bg-white/30 transition-colors" title="Reset Pin">
               <KeyRound className="w-5 h-5" />
             </button>
             <button onClick={() => {
@@ -889,26 +895,44 @@ export default function AdminPanel() {
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowPasswordModal(false)}>
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900">Reset Password</h3>
+                <h3 className="text-lg font-bold text-gray-900">Reset Pin</h3>
                 <button onClick={() => setShowPasswordModal(false)} className="p-1"><X className="w-5 h-5 text-gray-400" /></button>
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1.5 block">New Password</label>
+                  <label className="text-sm font-medium text-gray-700 mb-1.5 block">New Pin</label>
                   <div className="relative">
-                    <input type={showNewPassword ? 'text' : 'password'} value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Min 8 characters" className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm pr-11" />
+                    <input
+                      type={showNewPassword ? 'text' : 'password'}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={4}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="4 digits"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm pr-11"
+                    />
                     <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                       {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1.5 block">Confirm Password</label>
-                  <input type="password" value={confirmNewPassword} onChange={(e) => setConfirmNewPassword(e.target.value)} placeholder="Re-enter new password" className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm" />
+                  <label className="text-sm font-medium text-gray-700 mb-1.5 block">Confirm Pin</label>
+                  <input
+                    type="password"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={4}
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                    placeholder="Re-enter Pin"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-sm"
+                  />
                 </div>
                 <button onClick={handlePasswordReset} disabled={passwordLoading} className="w-full bg-primary text-white py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-all disabled:opacity-60 flex items-center justify-center gap-2">
                   {passwordLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {passwordLoading ? 'Updating...' : 'Update Password'}
+                  {passwordLoading ? 'Updating...' : 'Update Pin'}
                 </button>
               </div>
             </motion.div>

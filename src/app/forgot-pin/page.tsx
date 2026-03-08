@@ -9,14 +9,14 @@ import { getAssetPath } from '@/lib/utils';
 
 type Step = 'phone' | 'otp' | 'reset' | 'success';
 
-export default function ForgotPasswordPage() {
+export default function ForgotPinPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -128,28 +128,28 @@ export default function ForgotPasswordPage() {
     }
   };
 
-  const handleResetPassword = async () => {
+  const handleResetPin = async () => {
     setError('');
-    if (newPassword.length < 6) {
-      setError('Password must be at least 6 characters');
+    if (!/^\d{4}$/.test(newPin)) {
+      setError('Pin must be exactly 4 digits');
       return;
     }
-    if (newPassword !== confirmPassword) {
-      setError('Passwords do not match');
+    if (newPin !== confirmPin) {
+      setError('Pins do not match');
       return;
     }
 
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/reset-password`,  {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/reset-pin`,  {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone, newPassword }),
+        body: JSON.stringify({ phone, newPin }),
       });
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Failed to reset password');
+        setError(data.error || 'Failed to reset Pin');
         setLoading(false);
         return;
       }
@@ -169,7 +169,7 @@ export default function ForgotPasswordPage() {
         <Link href="/login" className="p-2 -ml-2 hover:bg-gray-100 rounded-full transition-colors">
           <ArrowLeft className="w-5 h-5 text-gray-700" />
         </Link>
-        <h1 className="text-lg font-bold text-gray-900">Reset Password</h1>
+        <h1 className="text-lg font-bold text-gray-900">Reset Pin</h1>
       </div>
 
       <div className="flex flex-col items-center mb-8">
@@ -284,37 +284,43 @@ export default function ForgotPasswordPage() {
             <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
               <Lock className="w-7 h-7 text-green-600" />
             </div>
-            <p className="text-sm text-green-700 font-medium">Phone verified! Set your new password</p>
+            <p className="text-sm text-green-700 font-medium">Phone verified! Set your new Pin</p>
           </div>
 
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">New Password</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">New Pin</label>
             <div className="flex items-center border border-gray-200 rounded-xl px-4 py-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 transition-all">
               <input
-                type={showPassword ? 'text' : 'password'}
-                placeholder="Enter new password"
-                value={newPassword}
-                onChange={(e) => { setNewPassword(e.target.value); setError(''); }}
+                type={showPin ? 'text' : 'password'}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={4}
+                placeholder="Enter 4-digit Pin"
+                value={newPin}
+                onChange={(e) => { setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4)); setError(''); }}
                 className="flex-1 text-sm text-gray-900 outline-none bg-transparent"
               />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="text-gray-400 ml-2">
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              <button type="button" onClick={() => setShowPin(!showPin)} className="text-gray-400 ml-2">
+                {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-medium text-gray-500 mb-1 block">Confirm Password</label>
+            <label className="text-xs font-medium text-gray-500 mb-1 block">Confirm Pin</label>
             <div className="flex items-center border border-gray-200 rounded-xl px-4 py-3 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/20 transition-all">
               <input
                 type={showConfirm ? 'text' : 'password'}
-                placeholder="Confirm new password"
-                value={confirmPassword}
-                onChange={(e) => { setConfirmPassword(e.target.value); setError(''); }}
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={4}
+                placeholder="Confirm 4-digit Pin"
+                value={confirmPin}
+                onChange={(e) => { setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 4)); setError(''); }}
                 className="flex-1 text-sm text-gray-900 outline-none bg-transparent"
               />
               <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="text-gray-400 ml-2">
-                {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
@@ -326,11 +332,11 @@ export default function ForgotPasswordPage() {
           )}
 
           <button
-            onClick={handleResetPassword}
-            disabled={loading || !newPassword || !confirmPassword}
+            onClick={handleResetPin}
+            disabled={loading || newPin.length !== 4 || confirmPin.length !== 4}
             className="w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm disabled:opacity-50 transition-all"
           >
-            {loading ? 'Resetting...' : 'Reset Password'}
+            {loading ? 'Resetting...' : 'Reset Pin'}
           </button>
         </div>
       )}
@@ -341,9 +347,9 @@ export default function ForgotPasswordPage() {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle2 className="w-8 h-8 text-green-600" />
             </div>
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Password Reset Successful!</h3>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Pin Reset Successful!</h3>
             <p className="text-sm text-gray-500">
-              Your password has been updated. You can now login with your new password.
+              Your Pin has been updated. You can now login with your new Pin.
             </p>
             {email && (
               <p className="text-xs text-gray-400 mt-2">Account: {email}</p>
@@ -361,7 +367,7 @@ export default function ForgotPasswordPage() {
 
       {step !== 'success' && (
         <p className="text-center text-sm text-gray-500 mt-8">
-          Remember your password?{' '}
+          Remember your Pin?{' '}
           <Link href="/login" className="text-primary font-semibold hover:underline">
             Login
           </Link>

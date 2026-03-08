@@ -17,9 +17,9 @@ export default function SignupPage() {
   const [phone, setPhone] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [redirecting, setRedirecting] = useState(false);
@@ -93,9 +93,9 @@ export default function SignupPage() {
       const domain = email.split('@')[1]?.toLowerCase();
       if (!domain || !allowedDomains.includes(domain)) newErrors.email = 'Please use a valid email (e.g. @gmail.com)';
     }
-    if (!password) newErrors.password = 'Pin is required';
-    else if (!/^\d{4}$/.test(password)) newErrors.password = 'Pin must be 4 digits';
-    if (password !== confirmPassword) newErrors.confirmPassword = 'Pins do not match';
+    if (!pin) newErrors.pin = 'Pin is required';
+    else if (!/^\d{4}$/.test(pin)) newErrors.pin = 'Pin must be 4 digits';
+    if (pin !== confirmPin) newErrors.confirmPin = 'Pins do not match';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -216,7 +216,7 @@ export default function SignupPage() {
         return;
       }
 
-      const result = await signup(name, email, phone, password);
+      const result = await signup(name, email, phone, pin);
 
       if (result.success) {
         setRedirecting(true);
@@ -378,24 +378,24 @@ export default function SignupPage() {
             <label className="text-sm font-medium text-gray-700 mb-1.5 block">Pin</label>
             <div className="relative">
               <input
-                type={showPassword ? 'text' : 'password'}
+                type={showPin ? 'text' : 'password'}
                 inputMode="numeric"
                 pattern="[0-9]*"
                 maxLength={4}
-                value={password}
-                onChange={(e) => setPassword(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
                 placeholder="Enter 4-digit Pin"
-                className={`w-full px-4 py-3 rounded-xl border ${errors.password ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm pr-11`}
+                className={`w-full px-4 py-3 rounded-xl border ${errors.pin ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm pr-11`}
               />
               <button
                 type="button"
-                onClick={() => setShowPassword(!showPassword)}
+                onClick={() => setShowPin(!showPin)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
               >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+            {errors.pin && <p className="text-red-500 text-xs mt-1">{errors.pin}</p>}
           </div>
 
           <div>
@@ -405,12 +405,12 @@ export default function SignupPage() {
               inputMode="numeric"
               pattern="[0-9]*"
               maxLength={4}
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              value={confirmPin}
+              onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
               placeholder="Re-enter your Pin"
-              className={`w-full px-4 py-3 rounded-xl border ${errors.confirmPassword ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm`}
+              className={`w-full px-4 py-3 rounded-xl border ${errors.confirmPin ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm`}
             />
-            {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
+            {errors.confirmPin && <p className="text-red-500 text-xs mt-1">{errors.confirmPin}</p>}
           </div>
 
           <button
