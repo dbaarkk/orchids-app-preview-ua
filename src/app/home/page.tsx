@@ -57,7 +57,7 @@ export default function HomePage() {
   const nearbyGarageServices = services.slice(0, 6);
 
   return (
-    <div className="mobile-container bg-gray-50 min-h-screen safe-bottom">
+    <main className="mobile-container bg-gray-50 min-h-screen safe-bottom">
       <header className="bg-primary px-4 pt-4 pb-6 rounded-b-3xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -252,6 +252,6 @@ export default function HomePage() {
       </div>
 
       <div className="h-6" />
-    </div>
+    </main>
   );
 }

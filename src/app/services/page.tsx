@@ -41,7 +41,7 @@ function ServicesContent() {
   });
 
   return (
-    <div className="mobile-container bg-gray-50 min-h-screen safe-bottom">
+    <main className="mobile-container bg-gray-50 min-h-screen safe-bottom">
       <header className="bg-white px-4 py-4 sticky top-0 z-10 border-b border-gray-100">
         <div className="flex items-center gap-3 mb-4">
           <button onClick={() => router.back()} className="p-2 -ml-2">
@@ -145,7 +145,7 @@ function ServicesContent() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }
 

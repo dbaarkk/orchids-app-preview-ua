@@ -1,0 +1,14 @@
+User-agent: *
+Allow: /
+Allow: /about
+Allow: /services
+Allow: /contact
+Allow: /privacy-policy
+Disallow: /admin/
+Disallow: /profile/
+Disallow: /booking/
+Disallow: /bookings/
+Disallow: /wallet/
+Disallow: /api/
+
+Sitemap: https://urbanauto.in/sitemap.xml
