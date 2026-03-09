@@ -108,6 +108,7 @@
         "tailwindcss-animate": "^1.0.7",
         "three": "^0.178.0",
         "three-globe": "^2.43.0",
+        "twilio": "^5.12.2",
         "vaul": "^1.1.2",
         "zod": "^4.1.12"
     },
