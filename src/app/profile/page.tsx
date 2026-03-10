@@ -4,11 +4,39 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useNativeNotifications } from '@/hooks/useNativeNotifications';
-import { ArrowLeft, User, Mail, Phone, MapPin, LogOut, ChevronRight, HelpCircle, Info, KeyRound, Eye, EyeOff, X, Loader2, Wallet, Shield, Trash2, Lock } from 'lucide-react';
+import { ArrowLeft, User, Mail, Phone, MapPin, LogOut, ChevronRight, HelpCircle, Info, KeyRound, Eye, EyeOff, X, Loader2, Wallet, Shield, Trash2, Lock, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { getAssetPath } from '@/lib/utils';
+
+function NotificationToggle() {
+  const { registerNotifications, status } = useNativeNotifications();
+  const [asking, setAsking] = useState(false);
+
+  if (status === 'granted') return null;
+
+  return (
+    <button
+      onClick={async () => {
+        setAsking(true);
+        await registerNotifications();
+        setAsking(false);
+      }}
+      disabled={asking}
+      className="w-full flex items-center gap-3 p-4 hover:bg-primary/5 transition-colors"
+    >
+      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+        {asking ? <Loader2 className="w-5 h-5 text-primary animate-spin" /> : <Bell className="w-5 h-5 text-primary" />}
+      </div>
+      <div className="flex-1 text-left">
+        <span className="text-sm font-medium text-gray-900">Enable Notifications</span>
+        <p className="text-[10px] text-gray-500">Stay updated with your bookings</p>
+      </div>
+      <ChevronRight className="w-5 h-5 text-gray-400" />
+    </button>
+  );
+}
 
 export default function ProfilePage() {
   const { user, isLoading, logout, bookings, updatePin, refreshUser } = useAuth();
