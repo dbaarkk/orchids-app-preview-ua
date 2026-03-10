@@ -13,15 +13,19 @@ export default function NotificationPermissionHandler() {
 
   useEffect(() => {
     // Only proceed if user is logged in and notification status is 'prompt' (not yet decided)
-    if (user && status === 'prompt') {
+    // We check user?.id to ensure the user is fully loaded and authenticated
+    if (user?.id && status === 'prompt') {
       const asked = localStorage.getItem('ua_notif_permission_prompted');
       if (!asked) {
-        // Delay slightly for better UX
-        const timer = setTimeout(() => setShowModal(true), 2000);
+        // Delay slightly for better UX after login/signup
+        const timer = setTimeout(() => setShowModal(true), 1500);
         return () => clearTimeout(timer);
       }
+    } else if (!user) {
+        // Reset state if user logs out
+        setShowModal(false);
     }
-  }, [user, status]);
+  }, [user?.id, status]);
 
   const handleEnable = async () => {
     localStorage.setItem('ua_notif_permission_prompted', 'true');
@@ -52,12 +56,12 @@ export default function NotificationPermissionHandler() {
                 <Bell className="w-8 h-8 text-primary" />
               </div>
 
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
+              <h2 className="text-xl font-bold text-gray-900 mb-3">
                 Stay tuned for future updates
               </h2>
 
-              <p className="text-gray-500 text-sm leading-relaxed mb-8">
-                Enable notifications to receive booking updates, service alerts, and important announcements.
+              <p className="text-gray-600 text-sm leading-relaxed mb-8">
+                Stay tuned for future updates by enabling notifications
               </p>
 
               <div className="flex flex-col w-full gap-3">
@@ -65,14 +69,14 @@ export default function NotificationPermissionHandler() {
                   onClick={handleEnable}
                   className="w-full py-4 bg-primary text-white rounded-2xl font-bold text-sm hover:bg-primary/90 transition-all active:scale-[0.98] shadow-lg shadow-primary/20"
                 >
-                  Enable Notifications
+                  Enable
                 </button>
 
                 <button
                   onClick={handleNoThanks}
                   className="w-full py-3 text-gray-400 font-semibold text-sm hover:text-gray-600 transition-all"
                 >
-                  No Thanks
+                  No thanks
                 </button>
               </div>
             </div>

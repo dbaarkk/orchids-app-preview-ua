@@ -298,7 +298,7 @@ export default function ProfilePage() {
             </button>
             <button
               onClick={() => router.push('/profile/delete-account')}
-              className="w-full flex items-center gap-3 p-4 hover:bg-red-50 transition-colors"
+              className="w-full flex items-center gap-3 p-4 hover:bg-red-50 transition-colors border-b border-gray-100"
             >
               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                 <Trash2 className="w-5 h-5 text-red-600" />
@@ -306,6 +306,7 @@ export default function ProfilePage() {
               <span className="flex-1 text-left text-sm font-medium text-red-600">Delete Account</span>
               <ChevronRight className="w-5 h-5 text-gray-400" />
             </button>
+            <NotificationToggle />
           </div>
         </div>
 
