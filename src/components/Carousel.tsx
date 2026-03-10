@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { motion, PanInfo, useMotionValue, useTransform } from 'framer-motion';
+import { motion, PanInfo, useMotionValue } from 'framer-motion';
 import './Carousel.css';
 
 export interface CarouselItem {
@@ -22,7 +22,7 @@ export interface CarouselProps {
   round?: boolean;
 }
 
-const DRAG_BUFFER = 0;
+const DRAG_BUFFER = 10;
 const VELOCITY_THRESHOLD = 500;
 const GAP = 16;
 const SPRING_OPTIONS = { type: 'spring' as const, stiffness: 300, damping: 30 };
@@ -32,16 +32,10 @@ interface CarouselItemProps {
   index: number;
   itemWidth: number;
   round: boolean;
-  trackItemOffset: number;
-  x: any;
   transition: any;
 }
 
-function CarouselItem({ item, index, itemWidth, round, trackItemOffset, x, transition }: CarouselItemProps) {
-  const range = [-(index + 1) * trackItemOffset, -index * trackItemOffset, -(index - 1) * trackItemOffset];
-  const outputRange = [15, 0, -15];
-  const rotateY = useTransform(x, range, outputRange, { clamp: false });
-
+function CarouselItem({ item, index, itemWidth, round, transition }: CarouselItemProps) {
   return (
     <motion.div
       key={`${item?.id ?? index}-${index}`}
@@ -49,7 +43,6 @@ function CarouselItem({ item, index, itemWidth, round, trackItemOffset, x, trans
       style={{
         width: itemWidth,
         height: round ? itemWidth : '100%',
-        rotateY: rotateY,
         ...(round && { borderRadius: '50%' })
       }}
       transition={transition}
@@ -219,8 +212,6 @@ export default function Carousel({
         style={{
           width: itemWidth,
           gap: `${GAP}px`,
-          perspective: 1000,
-          perspectiveOrigin: `${position * trackItemOffset + itemWidth / 2}px 50%`,
           x
         }}
         onDragEnd={handleDragEnd}
@@ -236,8 +227,6 @@ export default function Carousel({
             index={index}
             itemWidth={itemWidth}
             round={round}
-            trackItemOffset={trackItemOffset}
-            x={x}
             transition={effectiveTransition}
           />
         ))}

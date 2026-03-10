@@ -19,8 +19,9 @@ function NotificationToggle() {
   if (status === 'granted') return null;
 
   const handleEnable = async () => {
-    setShowModal(false);
+    // Preserve user gesture by calling register first
     await registerNotifications();
+    setShowModal(false);
   };
 
   return (

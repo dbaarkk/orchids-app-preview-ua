@@ -27,9 +27,10 @@ export default function NotificationPermissionHandler() {
   }, [user?.id, status]);
 
   const handleEnable = async () => {
+    // Call register first to ensure user gesture is preserved for the browser popup
+    await registerNotifications();
     localStorage.setItem('ua_notif_permission_prompted', 'true');
     setShowModal(false);
-    await registerNotifications();
   };
 
   const handleNoThanks = () => {
