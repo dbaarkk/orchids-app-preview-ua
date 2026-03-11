@@ -33,17 +33,8 @@ export const useNativeNotifications = () => {
   }, [user]);
 
   const registerNotifications = useCallback(async () => {
-    // Check platform
-    const isNative = Capacitor.isNativePlatform();
-
-    if (!isNative) {
-      // BROWSER PATH
-      if (typeof window === 'undefined' || !('Notification' in window)) {
-        setStatus('denied');
-        return false;
-      }
-
-      // Important: Call requestPermission as directly as possible to preserve user gesture
+    // For Web Browser: Call requestPermission immediately to preserve user gesture
+    if (typeof window !== 'undefined' && 'Notification' in window && !Capacitor.isNativePlatform()) {
       const permission = await Notification.requestPermission();
       setStatus(permission as any);
 
@@ -53,8 +44,10 @@ export const useNativeNotifications = () => {
         }
         return false;
       }
+    }
 
-      // If granted, proceed with subscription
+    if (!Capacitor.isNativePlatform()) {
+      // Browser logic for subscription (only if granted)
       try {
         if ('serviceWorker' in navigator && 'PushManager' in window) {
           const registration = await navigator.serviceWorker.ready;
