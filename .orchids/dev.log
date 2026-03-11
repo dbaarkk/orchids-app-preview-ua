@@ -1,0 +1,39 @@
+
+> app@0.1.0 dev
+> next dev --turbopack
+
+ ⚠ Invalid next.config.ts options detected: 
+ ⚠     Unrecognized key(s) in object: 'allowedDevOrigins' at "experimental"
+ ⚠ See more info here: https://nextjs.org/docs/messages/invalid-next-config
+   ▲ Next.js 15.5.7 (Turbopack)
+   - Local:        http://localhost:3000
+   - Network:      http://172.20.0.7:3000
+   - Experiments (use with caution):
+     · allowedDevOrigins
+
+ ✓ Starting...
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+ ✓ Ready in 913ms
+ ○ Compiling / ...
+ ✓ Compiled / in 4.2s
+ ⨯ Error: supabaseUrl is required.
+    at __TURBOPACK__module__evaluation__ (src/lib/supabase.ts:38:37)
+    at __TURBOPACK__module__evaluation__ (.:4:38)
+    at __TURBOPACK__module__evaluation__ (.:6:45)
+    at __TURBOPACK__module__evaluation__ (.:3:53)
+  36 | }
+  37 |
+> 38 | export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+     |                                     ^
+  39 |   auth: {
+  40 |     storage: capacitorStorage || (typeof window !== 'undefined' ? localStorage : undefined),
+  41 |     autoRefreshToken: true, {
+  digest: '1404497530'
+}
+ GET /?_cb=1773220931549 500 in 4952ms
+ ⚠ Cross origin request detected from 3000-b2a1f171-2989-4ea1-b24a-6645e19858e6.orchids.cloud to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins

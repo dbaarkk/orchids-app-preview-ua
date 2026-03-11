@@ -1,9 +1,9 @@
 {
-  "projectId": "2a6574d1-1153-47ba-85d3-78eab2c8f780",
+  "projectId": "d5b45566-188f-444b-a8bf-113df1c382b5",
   "createdAt": 1768932155415,
   "version": "1.0",
   "startupCommands": [
-    "npm install; npm run dev"
+    "npm install --legacy-peer-deps; npm run dev"
   ],
   "templateId": "any",
   "detectedFramework": "nextjs"
