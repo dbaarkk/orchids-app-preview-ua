@@ -67,3 +67,25 @@ Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allow
   digest: '1404497530'
 }
  GET /?_cb=1773220946998 500 in 328ms
+<<<<<<< Updated upstream
+=======
+ ✓ Compiled in 302ms
+ ✓ Compiled in 154ms
+ ✓ Compiled in 143ms
+ ✓ Compiled / in 36ms
+ ⨯ Error: supabaseUrl is required.
+    at __TURBOPACK__module__evaluation__ (src/lib/supabase.ts:38:37)
+    at __TURBOPACK__module__evaluation__ (.:4:38)
+    at __TURBOPACK__module__evaluation__ (.:6:45)
+    at __TURBOPACK__module__evaluation__ (.:3:53)
+  36 | }
+  37 |
+> 38 | export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+     |                                     ^
+  39 |   auth: {
+  40 |     storage: capacitorStorage || (typeof window !== 'undefined' ? localStorage : undefined),
+  41 |     autoRefreshToken: true, {
+  digest: '1404497530'
+}
+ GET /?_cb=1773221843754 500 in 498ms
+>>>>>>> Stashed changes
