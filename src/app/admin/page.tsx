@@ -140,6 +140,7 @@ export default function AdminPanel() {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [uploading, setUploading] = useState(false);
   const [newDisabledDate, setNewDisabledDate] = useState('');
+  const [slotDisableDate, setSlotDisableDate] = useState('');
   const carouselFileRef = useRef<HTMLInputElement>(null);
   const qrFileRef = useRef<HTMLInputElement>(null);
 
@@ -1198,6 +1199,120 @@ export default function AdminPanel() {
                   </div>
                   {(!appConfig.booking_slots?.slots || appConfig.booking_slots.slots.length === 0) && (
                     <p className="text-center py-8 text-sm text-gray-400">No time slots configured</p>
+                  )}
+                </div>
+
+                {/* ── Disable Slots for a Specific Date ───────────── */}
+                <div className="border-t border-gray-100 pt-4 space-y-3">
+                  <p className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5" /> Disable Slots by Date
+                  </p>
+                  <p className="text-xs text-gray-400">Pick a date, then toggle individual slots off/on for that day only.</p>
+
+                  {/* Date picker for slot-level disabling */}
+                  <input
+                    type="date"
+                    value={slotDisableDate}
+                    min={new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })}
+                    onChange={(e) => setSlotDisableDate(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none"
+                  />
+
+                  {slotDisableDate && (appConfig.booking_slots?.slots || []).length > 0 && (() => {
+                    const slotsForDate: string[] = (appConfig.booking_slots?.disabled_slots_by_date?.[slotDisableDate]) || [];
+                    const allSlots: string[] = appConfig.booking_slots?.slots || [];
+
+                    const toggleSlot = async (slot: string) => {
+                      setUploading(true);
+                      try {
+                        const currentByDate: Record<string, string[]> = appConfig.booking_slots?.disabled_slots_by_date || {};
+                        const currentForDate: string[] = currentByDate[slotDisableDate] || [];
+                        const isDisabled = currentForDate.includes(slot);
+                        const updatedForDate = isDisabled
+                          ? currentForDate.filter((s: string) => s !== slot)
+                          : [...currentForDate, slot];
+
+                        const updatedByDate = { ...currentByDate };
+                        if (updatedForDate.length === 0) {
+                          delete updatedByDate[slotDisableDate];
+                        } else {
+                          updatedByDate[slotDisableDate] = updatedForDate;
+                        }
+
+                        await adminAction({
+                          action: 'update-app-config',
+                          key: 'booking_slots',
+                          value: { ...(appConfig.booking_slots || {}), disabled_slots_by_date: updatedByDate },
+                        });
+                        fetchConfig();
+                        toast.success(isDisabled ? 'Slot re-enabled' : 'Slot disabled for this date');
+                      } catch (err: any) {
+                        toast.error(err.message || 'Failed');
+                      } finally {
+                        setUploading(false);
+                      }
+                    };
+
+                    return (
+                      <div className="space-y-2">
+                        <p className="text-xs text-gray-500 font-medium">
+                          {new Date(slotDisableDate + 'T00:00:00').toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+                          {slotsForDate.length > 0 && <span className="ml-2 text-orange-500">({slotsForDate.length} disabled)</span>}
+                        </p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {allSlots.map((slot: string) => {
+                            const isDisabled = slotsForDate.includes(slot);
+                            return (
+                              <button
+                                key={slot}
+                                onClick={() => toggleSlot(slot)}
+                                disabled={uploading}
+                                className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-xs font-semibold transition-all disabled:opacity-60 ${
+                                  isDisabled
+                                    ? 'bg-red-50 border-red-200 text-red-600'
+                                    : 'bg-green-50 border-green-200 text-green-700'
+                                }`}
+                              >
+                                <span>{slot}</span>
+                                {isDisabled ? (
+                                  <X className="w-3.5 h-3.5 shrink-0" />
+                                ) : (
+                                  <Check className="w-3.5 h-3.5 shrink-0" />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <p className="text-[10px] text-gray-400">Green = available · Red = disabled for this date</p>
+                      </div>
+                    );
+                  })()}
+
+                  {slotDisableDate && (!appConfig.booking_slots?.slots || appConfig.booking_slots.slots.length === 0) && (
+                    <p className="text-xs text-gray-400 text-center py-2">No slots configured yet</p>
+                  )}
+
+                  {/* Summary of all dates that have per-date disabled slots */}
+                  {Object.keys(appConfig.booking_slots?.disabled_slots_by_date || {}).length > 0 && (
+                    <div className="space-y-1.5 pt-2 border-t border-gray-100">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase">Dates with disabled slots</p>
+                      {Object.entries(appConfig.booking_slots.disabled_slots_by_date as Record<string, string[]>).map(([d, slots]) => (
+                        <div key={d} className="flex items-start gap-2 p-2.5 bg-orange-50 rounded-xl border border-orange-100">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-orange-700">
+                              {new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                            <p className="text-[10px] text-orange-500 mt-0.5 truncate">{slots.join(', ')}</p>
+                          </div>
+                          <button
+                            onClick={() => setSlotDisableDate(d)}
+                            className="text-[10px] text-orange-600 font-semibold shrink-0 hover:underline"
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
 

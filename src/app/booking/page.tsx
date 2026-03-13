@@ -33,6 +33,7 @@ function BookingContent() {
     const [notes, setNotes] = useState('');
     const [availableSlots, setAvailableSlots] = useState<string[]>([]);
     const [disabledDates, setDisabledDates] = useState<string[]>([]);
+    const [disabledSlotsByDate, setDisabledSlotsByDate] = useState<Record<string, string[]>>({});
     const [occupiedSlots, setOccupiedSlots] = useState<string[]>([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -96,6 +97,7 @@ function BookingContent() {
                 if (!error && data?.value) {
                     if (data.value.slots) setAvailableSlots(data.value.slots);
                     if (data.value.disabled_dates) setDisabledDates(data.value.disabled_dates);
+                    if (data.value.disabled_slots_by_date) setDisabledSlotsByDate(data.value.disabled_slots_by_date);
                 }
             } catch {}
         };
@@ -192,6 +194,7 @@ function BookingContent() {
         if (!date) newErrors.date = 'Select date';
         else if (disabledDates.includes(date)) newErrors.date = 'This date is unavailable, please choose another';
         if (!time) newErrors.time = 'Select time';
+        else if ((disabledSlotsByDate[date] || []).includes(time)) newErrors.time = 'This time slot is unavailable, please select another';
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -422,8 +425,10 @@ function BookingContent() {
                                                 <div className="grid grid-cols-3 gap-2">
                                                     {groupSlots.map(slot => {
                                                         const isOccupied = occupiedSlots.includes(slot);
+                                                        const isAdminDisabled = (disabledSlotsByDate[date] || []).includes(slot);
+                                                        const isUnavailable = isOccupied || isAdminDisabled;
                                                         return (
-                                                            <button key={slot} disabled={isOccupied} onClick={() => setTime(slot)} className={cn("py-2.5 px-1 rounded-xl border text-[11px] font-bold transition-all", time === slot ? "border-primary bg-primary text-white shadow-md shadow-primary/20" : isOccupied ? "bg-gray-100 border-gray-100 text-gray-300 cursor-not-allowed" : "bg-white border-gray-100 text-gray-700")}>
+                                                            <button key={slot} disabled={isUnavailable} onClick={() => setTime(slot)} className={cn("py-2.5 px-1 rounded-xl border text-[11px] font-bold transition-all", time === slot ? "border-primary bg-primary text-white shadow-md shadow-primary/20" : isUnavailable ? "bg-gray-100 border-gray-100 text-gray-300 cursor-not-allowed" : "bg-white border-gray-100 text-gray-700")}>
                                                                 {slot}
                                                             </button>
                                                         );
