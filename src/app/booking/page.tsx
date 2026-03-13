@@ -32,6 +32,7 @@ function BookingContent() {
     const [time, setTime] = useState('');
     const [notes, setNotes] = useState('');
     const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+    const [disabledDates, setDisabledDates] = useState<string[]>([]);
     const [occupiedSlots, setOccupiedSlots] = useState<string[]>([]);
     const [loadingSlots, setLoadingSlots] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -92,8 +93,9 @@ function BookingContent() {
         const fetchConfig = async () => {
             try {
                 const { data, error } = await supabase.from('app_config').select('*').eq('key', 'booking_slots').single();
-                if (!error && data?.value?.slots) {
-                    setAvailableSlots(data.value.slots);
+                if (!error && data?.value) {
+                    if (data.value.slots) setAvailableSlots(data.value.slots);
+                    if (data.value.disabled_dates) setDisabledDates(data.value.disabled_dates);
                 }
             } catch {}
         };
@@ -188,6 +190,7 @@ function BookingContent() {
         if (!vehicleType) newErrors.vehicleType = 'Select vehicle type';
         if (!vehicleMakeModel.trim()) newErrors.vehicleMakeModel = 'Enter vehicle model';
         if (!date) newErrors.date = 'Select date';
+        else if (disabledDates.includes(date)) newErrors.date = 'This date is unavailable, please choose another';
         if (!time) newErrors.time = 'Select time';
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -374,11 +377,28 @@ function BookingContent() {
 
                     <div>
                         <p className="text-sm text-gray-600 mb-1.5">Select Date *</p>
-                        <input type="date" value={date} min={getISTDate()} onChange={(e) => { setDate(e.target.value); setTime(''); }} className={cn("w-full px-4 py-3 rounded-xl border bg-gray-50 text-sm outline-none", errors.date ? "border-red-400" : "border-gray-200")} />
+                        <input
+                          type="date"
+                          value={date}
+                          min={getISTDate()}
+                          onChange={(e) => {
+                            const picked = e.target.value;
+                            if (disabledDates.includes(picked)) {
+                              toast.error('This date is unavailable. Please choose another date.');
+                              return;
+                            }
+                            setDate(picked);
+                            setTime('');
+                          }}
+                          className={cn("w-full px-4 py-3 rounded-xl border bg-gray-50 text-sm outline-none", errors.date ? "border-red-400" : "border-gray-200")}
+                        />
+                        {disabledDates.includes(date) && (
+                          <p className="text-orange-500 text-xs mt-1 font-medium">⚠ This date is unavailable. Please select another date.</p>
+                        )}
                         {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date}</p>}
                     </div>
 
-                    {date && (
+                    {date && !disabledDates.includes(date) && (
                         <div className="space-y-4">
                             <h4 className="text-sm font-bold text-gray-900">Available Slots</h4>
                             {loadingSlots ? (

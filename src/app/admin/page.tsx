@@ -139,6 +139,7 @@ export default function AdminPanel() {
   const [upiId, setUpiId] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [uploading, setUploading] = useState(false);
+  const [newDisabledDate, setNewDisabledDate] = useState('');
   const carouselFileRef = useRef<HTMLInputElement>(null);
   const qrFileRef = useRef<HTMLInputElement>(null);
 
@@ -1199,6 +1200,97 @@ export default function AdminPanel() {
                     <p className="text-center py-8 text-sm text-gray-400">No time slots configured</p>
                   )}
                 </div>
+
+                {/* ── Disabled Dates ───────────────────────────────── */}
+                <div className="border-t border-gray-100 pt-4 space-y-3">
+                  <p className="text-xs font-bold text-gray-500 uppercase flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" /> Disable Dates
+                  </p>
+                  <p className="text-xs text-gray-400">Block specific dates so customers cannot book on those days (e.g. for manual / offline bookings).</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="date"
+                      value={newDisabledDate}
+                      min={new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' })}
+                      onChange={(e) => setNewDisabledDate(e.target.value)}
+                      className="flex-1 px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none"
+                    />
+                    <button
+                      onClick={async () => {
+                        if (!newDisabledDate) return;
+                        setUploading(true);
+                        try {
+                          const current: string[] = appConfig.booking_slots?.disabled_dates || [];
+                          if (current.includes(newDisabledDate)) {
+                            toast.error('Date already disabled');
+                            return;
+                          }
+                          const updated = [...current, newDisabledDate].sort();
+                          await adminAction({
+                            action: 'update-app-config',
+                            key: 'booking_slots',
+                            value: { ...(appConfig.booking_slots || {}), disabled_dates: updated },
+                          });
+                          setNewDisabledDate('');
+                          fetchConfig();
+                          toast.success('Date disabled');
+                        } catch (err: any) {
+                          toast.error(err.message || 'Failed to disable date');
+                        } finally {
+                          setUploading(false);
+                        }
+                      }}
+                      disabled={uploading || !newDisabledDate}
+                      className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-bold disabled:opacity-60 flex items-center gap-2 whitespace-nowrap"
+                    >
+                      {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                      Disable
+                    </button>
+                  </div>
+
+                  {/* List of disabled dates */}
+                  {(appConfig.booking_slots?.disabled_dates || []).length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-xs text-gray-500 font-medium">Currently disabled:</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {(appConfig.booking_slots.disabled_dates as string[]).map((d: string) => (
+                          <div key={d} className="flex items-center justify-between p-2.5 bg-red-50 rounded-xl border border-red-100">
+                            <span className="text-xs font-semibold text-red-700">
+                              {new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </span>
+                            <button
+                              onClick={async () => {
+                                setUploading(true);
+                                try {
+                                  const updated = (appConfig.booking_slots.disabled_dates as string[]).filter((x: string) => x !== d);
+                                  await adminAction({
+                                    action: 'update-app-config',
+                                    key: 'booking_slots',
+                                    value: { ...(appConfig.booking_slots || {}), disabled_dates: updated },
+                                  });
+                                  fetchConfig();
+                                  toast.success('Date re-enabled');
+                                } catch (err: any) {
+                                  toast.error(err.message || 'Failed');
+                                } finally {
+                                  setUploading(false);
+                                }
+                              }}
+                              className="p-1 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                              title="Re-enable this date"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {(!appConfig.booking_slots?.disabled_dates || appConfig.booking_slots.disabled_dates.length === 0) && (
+                    <p className="text-center py-3 text-xs text-gray-400">No dates disabled</p>
+                  )}
+                </div>
+
               </div>
             </motion.div>
           </motion.div>
