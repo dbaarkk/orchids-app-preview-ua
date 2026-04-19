@@ -1485,7 +1485,6 @@ export default function AdminPanel() {
                       name: packageForm.name,
                       price: Number(packageForm.price),
                       inclusions: packageForm.inclusions.split('\n').map(s => s.trim()).filter(s => s),
-                      service_allowances: packageForm.service_allowances,
                       active: true
                     };
 
