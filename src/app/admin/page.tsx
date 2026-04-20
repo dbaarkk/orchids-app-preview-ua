@@ -128,7 +128,7 @@ export default function AdminPanel() {
   const [loadingPackages, setLoadingPackages] = useState(false);
   const [showPackageModal, setShowPackageModal] = useState(false);
   const [editingPackage, setEditingPackage] = useState<any | null>(null);
-  const [packageForm, setPackageForm] = useState({ name: '', price: '', inclusions: '', service_allowances: {} });
+  const [packageForm, setPackageForm] = useState<{name: string, price: string, inclusions: string, service_allowances: Record<string, number>}>({ name: '', price: '', inclusions: '', service_allowances: {} });
   const [crmLeads, setCrmLeads] = useState<any[]>([]);
   const [loadingCrm, setLoadingCrm] = useState(false);
   const [showCrmModal, setShowCrmModal] = useState(false);
@@ -1474,8 +1474,46 @@ export default function AdminPanel() {
                   <input type="number" value={packageForm.price} onChange={(e) => setPackageForm({ ...packageForm, price: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-primary" placeholder="e.g. 1999" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Inclusions (One per line)</label>
+                  <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Inclusions (Display to User)</label>
                   <textarea value={packageForm.inclusions} onChange={(e) => setPackageForm({ ...packageForm, inclusions: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-primary min-h-[120px] resize-none" placeholder="Deep vacuum&#10;Foam wash&#10;Tire polish" />
+                  <p className="text-[10px] text-gray-400 mt-1">This text is shown to users on the package page.</p>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase mb-3 block">Service Allowances (Backend Redemption)</label>
+                  <p className="text-[10px] text-gray-500 mb-2 leading-tight">Define exactly how many times a user can redeem specific services for free when they buy this package. Services mapped here will automatically be 100% discounted during booking checkout.</p>
+                  <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2">
+                     {appServices.map(service => (
+                        <div key={service.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-100">
+                           <div className="flex-1">
+                               <p className="text-sm font-bold text-gray-900">{service.name}</p>
+                           </div>
+                           <div className="flex items-center gap-3">
+                               <button
+                                   onClick={() => setPackageForm(prev => ({
+                                       ...prev,
+                                       service_allowances: {
+                                           ...prev.service_allowances,
+                                           [service.id]: Math.max(0, (prev.service_allowances[service.id] || 0) - 1)
+                                       }
+                                   }))}
+                                   className="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100"
+                               >-</button>
+                               <span className="w-4 text-center font-bold text-gray-900">{packageForm.service_allowances[service.id] || 0}</span>
+                               <button
+                                   onClick={() => setPackageForm(prev => ({
+                                       ...prev,
+                                       service_allowances: {
+                                           ...prev.service_allowances,
+                                           [service.id]: (prev.service_allowances[service.id] || 0) + 1
+                                       }
+                                   }))}
+                                   className="w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90"
+                               >+</button>
+                           </div>
+                        </div>
+                     ))}
+                  </div>
                 </div>
 
                 <button
@@ -1485,6 +1523,7 @@ export default function AdminPanel() {
                       name: packageForm.name,
                       price: Number(packageForm.price),
                       inclusions: packageForm.inclusions.split('\n').map(s => s.trim()).filter(s => s),
+                      service_allowances: packageForm.service_allowances,
                       active: true
                     };
 
