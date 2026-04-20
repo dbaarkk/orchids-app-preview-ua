@@ -59,6 +59,9 @@ export default function ProfilePage() {
   const [confirmNewPin, setConfirmNewPin] = useState('');
   const [showNewPin, setShowNewPin] = useState(false);
   const [pinLoading, setPinLoading] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', email: '' });
+  const [editLoading, setEditLoading] = useState(false);
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpSending, setOtpSending] = useState(false);
@@ -314,7 +317,13 @@ export default function ProfilePage() {
           <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 px-1">Manage</h3>
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
             <button
-              onClick={() => toast.info('Profile editing coming soon')}
+              onClick={() => {
+                setEditForm({
+                  name: user?.name?.startsWith('User ') ? '' : (user?.name || ''),
+                  email: user?.email?.includes('@hashtaggarage.in') ? '' : (user?.email || '')
+                });
+                setShowEditModal(true);
+              }}
               className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
             >
               <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">

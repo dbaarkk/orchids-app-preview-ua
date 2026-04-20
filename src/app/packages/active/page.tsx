@@ -4,6 +4,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ArrowLeft, Package, Clock, ShieldCheck, Car } from 'lucide-react';
+import { services as appServices } from '@/lib/services-data';
 import { motion } from 'framer-motion';
 
 export default function ActivePackagesPage() {
@@ -111,18 +112,39 @@ export default function ActivePackagesPage() {
                 </div>
 
                 <div className="mt-4 pt-4 border-t border-gray-100">
-                  <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
-                      <Car className="w-4 h-4" /> Inclusions
+                  <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                          <Car className="w-4 h-4" />
+                          <span>Remaining Services</span>
+                      </div>
+                      <span className="text-[10px] text-gray-400 font-normal">Auto-updates on booking</span>
                   </h4>
                   <ul className="space-y-2">
-                    {pkg.packages?.inclusions?.map((inc: string, i: number) => (
-                      <li key={i} className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
-                        <span className="text-sm font-medium text-gray-700">{inc}</span>
-                      </li>
-                    ))}
+                    {Object.entries(pkg.remaining_allowances || {}).map(([serviceId, count]: [string, any]) => {
+                      const serviceDef = appServices.find(s => s.id === serviceId);
+                      const displayName = serviceDef ? serviceDef.name : serviceId;
+                      return (
+                          <li key={serviceId} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
+                            <span className="text-sm font-medium text-gray-700">{displayName}</span>
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded shadow-sm ${count > 0 ? 'bg-white text-gray-900 border border-gray-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                                {count as number} left
+                            </span>
+                          </li>
+                      );
+                    })}
                   </ul>
-                  {(!pkg.packages?.inclusions || pkg.packages.inclusions.length === 0) && (
-                      <p className="text-sm text-gray-500 italic">No specific inclusions defined.</p>
+                  {Object.keys(pkg.remaining_allowances || {}).length === 0 && (
+                      <div className="text-sm text-gray-500 italic">
+                        <p>No specific service limits defined.</p>
+                        <ul className="mt-2 space-y-1">
+                          {pkg.packages?.inclusions?.map((inc: string, i: number) => (
+                            <li key={i} className="flex items-center gap-2 text-xs not-italic">
+                              <div className="w-1 h-1 rounded-full bg-gray-400"></div>
+                              {inc}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                   )}
                 </div>
               </motion.div>

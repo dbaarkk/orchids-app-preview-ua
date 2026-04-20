@@ -227,6 +227,7 @@ export default function BookingSummaryPage() {
             couponCode: appliedCoupon?.code || null,
             discountAmount,
             packageId: appliedPackage?.id || summaryData.package_id || null,
+            service_id: summaryData.selectedServices?.[0] || null,
           });
 
           if (result.success) {
@@ -266,7 +267,8 @@ export default function BookingSummaryPage() {
         paymentStatus: 'unpaid',
         couponCode: appliedCoupon?.code || null,
         discountAmount,
-        packageId: summaryData.package_id || null,
+        packageId: appliedPackage?.id || summaryData.package_id || null,
+        service_id: summaryData.selectedServices?.[0] || null,
       });
 
         if (result.success) {

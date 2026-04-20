@@ -31,8 +31,12 @@ export async function POST(request: Request) {
       if (pkgData && pkgData.remaining_allowances) {
           const updatedAllowances = { ...pkgData.remaining_allowances };
           const serviceName = bookingPayload.service_name || bookingPayload.serviceName;
-          if (serviceName && updatedAllowances[serviceName] && updatedAllowances[serviceName] > 0) {
-              updatedAllowances[serviceName] -= 1;
+          const serviceId = bookingPayload.service_id;
+
+          const keyToDeduct = serviceId && updatedAllowances[serviceId] ? serviceId : serviceName;
+
+          if (keyToDeduct && updatedAllowances[keyToDeduct] && updatedAllowances[keyToDeduct] > 0) {
+              updatedAllowances[keyToDeduct] -= 1;
               await supabaseAdmin.from('user_packages').update({ remaining_allowances: updatedAllowances }).eq('id', bookingPayload.package_id);
           }
       }

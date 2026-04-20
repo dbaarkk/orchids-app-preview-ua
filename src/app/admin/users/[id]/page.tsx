@@ -7,10 +7,11 @@ import {
   ArrowLeft, User, Phone, Mail, MapPin, Calendar, Loader2, IndianRupee,
   ShieldCheck, ShieldX, Ban, CheckCircle, KeyRound, Car, Home, Truck,
   FileText, AlertTriangle, Ticket, Plus, Trash2, ToggleLeft,
-  ToggleRight, Eye, EyeOff, X, Clock, ArrowUpRight, ArrowDownLeft,
+  ToggleRight, Eye, EyeOff, X, Clock, ArrowUpRight, ArrowDownLeft, Package
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { services as appServices } from '@/lib/services-data';
 
 interface Profile {
   id: string;
