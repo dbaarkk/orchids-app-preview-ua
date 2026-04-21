@@ -11,6 +11,17 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+
+const getAuthToken = () => {
+    if (typeof window === 'undefined') return '';
+    try {
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+        const key = url ? `sb-${url.split('//')[1].split('.')[0]}-auth-token` : '';
+        const tokenStr = key ? localStorage.getItem(key) : null;
+        return tokenStr ? JSON.parse(tokenStr).access_token : '';
+    } catch { return ''; }
+};
+
 import { services as appServices } from '@/lib/services-data';
 
 interface Profile {
@@ -72,7 +83,7 @@ interface Coupon {
 
 async function adminFetch(resource: string, params?: Record<string, string>) {
   const query = new URLSearchParams({ resource, ...params });
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin?${query}`);
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin?${query}`, { headers: { 'Authorization': `Bearer ${getAuthToken()}` } });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error);
   return json;
@@ -81,7 +92,7 @@ async function adminFetch(resource: string, params?: Record<string, string>) {
 async function adminAction(body: any) {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin`,  {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
     body: JSON.stringify(body),
   });
   const json = await res.json();

@@ -8,6 +8,14 @@ export async function GET(req: NextRequest) {
   );
 
   try {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+  if (authErr || !user || user.email?.toLowerCase() !== 'theurbanauto@gmail.com') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
     const { data, error } = await supabase
       .from('crm_leads')
       .select(`
@@ -40,6 +48,14 @@ export async function POST(req: NextRequest) {
   );
 
   try {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+  if (authErr || !user || user.email?.toLowerCase() !== 'theurbanauto@gmail.com') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
     const body = await req.json();
     const { data, error } = await supabase
       .from('crm_leads')
@@ -61,6 +77,14 @@ export async function PUT(req: NextRequest) {
   );
 
   try {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+  if (authErr || !user || user.email?.toLowerCase() !== 'theurbanauto@gmail.com') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
     const body = await req.json();
     const { id, ...updateData } = body;
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });

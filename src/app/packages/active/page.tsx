@@ -135,15 +135,7 @@ export default function ActivePackagesPage() {
                   </ul>
                   {Object.keys(pkg.remaining_allowances || {}).length === 0 && (
                       <div className="text-sm text-gray-500 italic">
-                        <p>No specific service limits defined.</p>
-                        <ul className="mt-2 space-y-1">
-                          {pkg.packages?.inclusions?.map((inc: string, i: number) => (
-                            <li key={i} className="flex items-center gap-2 text-xs not-italic">
-                              <div className="w-1 h-1 rounded-full bg-gray-400"></div>
-                              {inc}
-                            </li>
-                          ))}
-                        </ul>
+                        <p>No services found in this package.</p>
                       </div>
                   )}
                 </div>

@@ -9,6 +9,17 @@ import { supabase } from '@/lib/supabase';
 import { services } from '@/lib/services-data';
 import { toast } from 'sonner';
 
+const getAuthToken = () => {
+    if (typeof window === 'undefined') return '';
+    try {
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+        const key = url ? `sb-${url.split('//')[1].split('.')[0]}-auth-token` : '';
+        const tokenStr = key ? localStorage.getItem(key) : null;
+        return tokenStr ? JSON.parse(tokenStr).access_token : '';
+    } catch { return ''; }
+};
+
+
 interface AdminBooking {
   id: string;
   user_id: string;
@@ -74,7 +85,7 @@ interface Coupon {
 }
 
 async function adminFetch(resource: string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin?resource=${resource}`);
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin?resource=${resource}`, { headers: { 'Authorization': `Bearer ${getAuthToken()}` } });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error);
   return json.data;
@@ -83,7 +94,7 @@ async function adminFetch(resource: string) {
 async function adminAction(body: any) {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin`,  {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
     body: JSON.stringify(body),
   });
   const json = await res.json();
@@ -128,7 +139,7 @@ export default function AdminPanel() {
   const [loadingPackages, setLoadingPackages] = useState(false);
   const [showPackageModal, setShowPackageModal] = useState(false);
   const [editingPackage, setEditingPackage] = useState<any | null>(null);
-  const [packageForm, setPackageForm] = useState<{name: string, price: string, inclusions: string, service_allowances: Record<string, number>}>({ name: '', price: '', inclusions: '', service_allowances: {} });
+  const [packageForm, setPackageForm] = useState<{name: string, price: string, service_allowances: Record<string, number>}>({ name: '', price: '', service_allowances: {} });
   const [crmLeads, setCrmLeads] = useState<any[]>([]);
   const [loadingCrm, setLoadingCrm] = useState(false);
   const [showCrmModal, setShowCrmModal] = useState(false);
@@ -260,7 +271,7 @@ export default function AdminPanel() {
   const fetchPackages = useCallback(async () => {
     setLoadingPackages(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/packages`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/packages`, { headers: { 'Authorization': `Bearer ${getAuthToken()}` } });
       if (res.ok) {
         const data = await res.json();
         setPackages(data);
@@ -272,7 +283,7 @@ export default function AdminPanel() {
   const fetchCrmLeads = useCallback(async () => {
     setLoadingCrm(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/crm`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/crm`, { headers: { 'Authorization': `Bearer ${getAuthToken()}` } });
       if (res.ok) {
         const data = await res.json();
         setCrmLeads(data);
@@ -902,7 +913,7 @@ export default function AdminPanel() {
             <button
               onClick={() => {
                 setEditingPackage(null);
-                setPackageForm({ name: '', price: '', inclusions: '', service_allowances: {} });
+                setPackageForm({ name: '', price: '', service_allowances: {} });
                 setShowPackageModal(true);
               }}
               className="px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold flex items-center gap-1"
@@ -927,7 +938,7 @@ export default function AdminPanel() {
                     <button
                       onClick={() => {
                         setEditingPackage(pkg);
-                        setPackageForm({ name: pkg.name, price: String(pkg.price), inclusions: (pkg.inclusions || []).join('\n'), service_allowances: pkg.service_allowances || {} });
+                        setPackageForm({ name: pkg.name, price: String(pkg.price), service_allowances: pkg.service_allowances || {} });
                         setShowPackageModal(true);
                       }}
                       className="p-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200"
@@ -938,7 +949,7 @@ export default function AdminPanel() {
                       onClick={async () => {
                         if (!confirm('Delete package?')) return;
                         try {
-                          await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/packages?id=${pkg.id}`, { method: 'DELETE' });
+                          await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/packages?id=${pkg.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getAuthToken()}` } });
                           toast.success('Package deleted');
                           fetchPackages();
                         } catch { toast.error('Failed to delete'); }
@@ -952,9 +963,18 @@ export default function AdminPanel() {
                 <div className="p-4 bg-gray-50/50">
                   <p className="text-[10px] font-bold text-gray-500 uppercase mb-2">Inclusions</p>
                   <ul className="space-y-1">
-                    {(pkg.inclusions || []).map((inc: string, i: number) => (
-                      <li key={i} className="text-xs text-gray-700 flex gap-2"><Check className="w-3.5 h-3.5 text-green-500" /> {inc}</li>
-                    ))}
+                    {pkg.inclusions && pkg.inclusions.length > 0 ? (
+                        pkg.inclusions.map((inc: string, i: number) => (
+                          <li key={i} className="text-xs text-gray-700 flex gap-2"><Check className="w-3.5 h-3.5 text-green-500" /> {inc}</li>
+                        ))
+                    ) : (
+                        Object.entries(pkg.service_allowances || {}).map(([serviceId, count]: [string, any]) => {
+                            const svc = services.find(s => s.id === serviceId);
+                            return (
+                               <li key={serviceId} className="text-xs text-gray-700 flex gap-2"><Check className="w-3.5 h-3.5 text-green-500" /> {count}x {svc ? svc.name : serviceId}</li>
+                            )
+                        })
+                    )}
                   </ul>
                 </div>
               </div>
@@ -1184,7 +1204,7 @@ export default function AdminPanel() {
                     try {
                       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/push`, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
                         body: JSON.stringify({
                           title: notificationTitle,
                           content: notificationContent
@@ -1434,10 +1454,10 @@ export default function AdminPanel() {
                     setSavingCrm(true);
                     try {
                       if (editingLead) {
-                        await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/crm`, { method: 'PUT', body: JSON.stringify({ id: editingLead.id, ...body }) });
+                        await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/crm`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` }, body: JSON.stringify({ id: editingLead.id, ...body }) });
                         toast.success('Lead updated');
                       } else {
-                        await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/crm`, { method: 'POST', body: JSON.stringify(body) });
+                        await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/crm`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` }, body: JSON.stringify(body) });
                         toast.success('Lead created');
                       }
                       setShowCrmModal(false);
@@ -1474,14 +1494,8 @@ export default function AdminPanel() {
                   <input type="number" value={packageForm.price} onChange={(e) => setPackageForm({ ...packageForm, price: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-primary" placeholder="e.g. 1999" />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Inclusions (Display to User)</label>
-                  <textarea value={packageForm.inclusions} onChange={(e) => setPackageForm({ ...packageForm, inclusions: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-primary min-h-[120px] resize-none" placeholder="Deep vacuum&#10;Foam wash&#10;Tire polish" />
-                  <p className="text-[10px] text-gray-400 mt-1">This text is shown to users on the package page.</p>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase mb-3 block">Service Allowances (Backend Redemption)</label>
-                  <p className="text-[10px] text-gray-500 mb-2 leading-tight">Define exactly how many times a user can redeem specific services for free when they buy this package. Services mapped here will automatically be 100% discounted during booking checkout.</p>
+                  <label className="text-xs font-semibold text-gray-500 uppercase mb-3 block">Included Services & Usages</label>
+                  <p className="text-[10px] text-gray-500 mb-2 leading-tight">Select the services and their usage limits for this package. This will automatically generate the inclusions list for the users.</p>
                   <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2">
                      {services.map(service => (
                         <div key={service.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-100">
@@ -1519,24 +1533,31 @@ export default function AdminPanel() {
                 <button
                   onClick={async () => {
                     if (!packageForm.name || !packageForm.price) return toast.error('Name and price required');
+                    const generatedInclusions = Object.entries(packageForm.service_allowances)
+                        .filter(([_, count]) => count > 0)
+                        .map(([serviceId, count]) => {
+                           const svc = services.find(s => s.id === serviceId);
+                           return `${count}x ${svc ? svc.name : serviceId}`;
+                        });
+
                     const body = {
                       name: packageForm.name,
                       price: Number(packageForm.price),
-                      inclusions: packageForm.inclusions.split('\n').map(s => s.trim()).filter(s => s),
+                      inclusions: generatedInclusions,
                       service_allowances: packageForm.service_allowances,
                       active: true
                     };
 
                     try {
                       if (editingPackage) {
-                        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/packages`, { method: 'PUT', body: JSON.stringify({ id: editingPackage.id, ...body }) });
+                        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/packages`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` }, body: JSON.stringify({ id: editingPackage.id, ...body }) });
                         if (!res.ok) {
                            const d = await res.json();
                            throw new Error(d.error || 'Update failed');
                         }
                         toast.success('Package updated');
                       } else {
-                        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/packages`, { method: 'POST', body: JSON.stringify(body) });
+                        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/packages`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` }, body: JSON.stringify(body) });
                         if (!res.ok) {
                            const d = await res.json();
                            throw new Error(d.error || 'Creation failed');

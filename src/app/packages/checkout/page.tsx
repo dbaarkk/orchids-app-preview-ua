@@ -11,6 +11,7 @@ export default function PackageCheckout() {
   const router = useRouter();
   const [draft, setDraft] = useState<any>(null);
   const [paying, setPaying] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'pay_later'>('wallet');
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -43,7 +44,8 @@ export default function PackageCheckout() {
 
   const handlePayWallet = async () => {
     if (!user) return;
-    if ((user.walletBalance || user.wallet_balance || 0) < draft.package_price) {
+
+    if (paymentMethod === 'wallet' && (user.walletBalance || user.wallet_balance || 0) < draft.package_price) {
       toast.error('Insufficient wallet balance');
       router.push('/wallet');
       return;
@@ -67,12 +69,12 @@ export default function PackageCheckout() {
             'Content-Type': 'application/json',
             ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify({ userId: user.id, packageId: draft.package_id, price: draft.package_price })
+        body: JSON.stringify({ userId: user.id, packageId: draft.package_id, price: draft.package_price, paymentMethod })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
 
-      toast.success('Package purchased successfully!');
+      toast.success(paymentMethod === 'wallet' ? 'Package purchased successfully!' : 'Package activated successfully!');
       localStorage.removeItem('ua_booking_draft');
       router.replace('/packages');
     } catch (e: any) {
@@ -105,23 +107,61 @@ export default function PackageCheckout() {
 
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 space-y-4">
           <h3 className="font-bold text-gray-900 text-sm">Payment Method</h3>
+
           <button
-            onClick={handlePayWallet}
+            onClick={() => setPaymentMethod('wallet')}
             disabled={paying}
-            className="w-full p-4 rounded-xl border-2 border-primary/20 bg-primary/5 flex items-center justify-between"
+            className={`w-full p-4 rounded-xl border-2 flex flex-col gap-3 transition-colors ${paymentMethod === 'wallet' ? 'border-primary/20 bg-primary/5' : 'border-gray-100 bg-white hover:bg-gray-50'}`}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <Wallet className="w-5 h-5 text-primary" />
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Wallet className="w-5 h-5 text-primary" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-gray-900 text-sm">Pay from Wallet</p>
+                  <p className="text-xs text-gray-500">Balance: ₹{user?.walletBalance || user?.wallet_balance || 0}</p>
+                </div>
               </div>
-              <div className="text-left">
-                <p className="font-bold text-gray-900 text-sm">Pay from Wallet</p>
-                <p className="text-xs text-gray-500">Balance: ₹{user?.walletBalance || user?.wallet_balance || 0}</p>
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'wallet' ? 'border-primary' : 'border-gray-300'}`}>
+                {paymentMethod === 'wallet' && <div className="w-2.5 h-2.5 bg-primary rounded-full" />}
               </div>
             </div>
-            <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
-              {paying ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Check className="w-4 h-4 text-white" />}
+            {paymentMethod === 'wallet' && (
+               <p className="text-xs text-gray-600 text-left pl-[52px]">Your package will be instantly activated and ₹{draft.package_price} will be deducted from your wallet.</p>
+            )}
+          </button>
+
+          <button
+            onClick={() => setPaymentMethod('pay_later')}
+            disabled={paying}
+            className={`w-full p-4 rounded-xl border-2 flex flex-col gap-3 transition-colors ${paymentMethod === 'pay_later' ? 'border-primary/20 bg-primary/5' : 'border-gray-100 bg-white hover:bg-gray-50'}`}
+          >
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center">
+                  <PackageIcon className="w-5 h-5 text-orange-600" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-gray-900 text-sm">Pay after first service completion</p>
+                </div>
+              </div>
+              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${paymentMethod === 'pay_later' ? 'border-primary' : 'border-gray-300'}`}>
+                {paymentMethod === 'pay_later' && <div className="w-2.5 h-2.5 bg-primary rounded-full" />}
+              </div>
             </div>
+            {paymentMethod === 'pay_later' && (
+               <p className="text-xs text-gray-600 text-left pl-[52px]">With this option you can pay for the whole package after first service is completed included in the package to continue this package.</p>
+            )}
+          </button>
+
+          <button
+             onClick={handlePayWallet}
+             disabled={paying}
+             className="w-full py-4 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 mt-4"
+          >
+             {paying && <Loader2 className="w-4 h-4 animate-spin" />}
+             {paymentMethod === 'wallet' ? 'Pay & Activate' : 'Activate Package'}
           </button>
         </div>
       </main>

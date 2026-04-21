@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Check, Loader2, Package as PackageIcon } from 'lucide-react';
+import { services as appServices } from '@/lib/services-data';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -10,7 +11,7 @@ interface PackageData {
   id: string;
   name: string;
   price: number;
-  inclusions: string[];
+  service_allowances: Record<string, number>;
   active: boolean;
   image?: string;
 }
@@ -103,12 +104,15 @@ export default function PackagesPage() {
                 <div className="p-5 flex-1 flex flex-col">
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">What's Included</p>
                   <ul className="space-y-2.5 mb-6 flex-1">
-                    {(pkg.inclusions || []).map((item, idx) => (
-                      <li key={idx} className="flex items-start gap-2">
-                        <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                        <span className="text-sm text-gray-700 leading-snug">{item}</span>
-                      </li>
-                    ))}
+                    {Object.entries(pkg.service_allowances || {}).map(([serviceId, count], idx) => {
+                      const svc = appServices.find(s => s.id === serviceId);
+                      return (
+                        <li key={idx} className="flex items-start gap-2">
+                          <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm font-bold text-gray-900">{count as number}x <span className="font-medium text-gray-700">{svc ? svc.name : serviceId}</span></span>
+                        </li>
+                      );
+                    })}
                   </ul>
 
                   <button

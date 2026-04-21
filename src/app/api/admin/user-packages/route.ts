@@ -8,6 +8,14 @@ export async function PUT(req: Request) {
   );
 
   try {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+  if (authErr || !user || user.email?.toLowerCase() !== 'theurbanauto@gmail.com') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
     const { packageId, remaining_allowances } = await req.json();
 
     if (!packageId || !remaining_allowances) {

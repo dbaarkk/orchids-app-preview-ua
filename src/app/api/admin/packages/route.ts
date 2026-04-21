@@ -8,6 +8,14 @@ export async function GET(req: NextRequest) {
   );
 
   try {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+  if (authErr || !user || user.email?.toLowerCase() !== 'theurbanauto@gmail.com') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
     const { data, error } = await supabase
       .from('packages')
       .select('*')
@@ -32,6 +40,14 @@ export async function POST(req: NextRequest) {
   );
 
   try {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+  if (authErr || !user || user.email?.toLowerCase() !== 'theurbanauto@gmail.com') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
     const body = await req.json();
 
     // Add fallback for service_allowances so that it doesn't break if the column doesn't exist
@@ -71,6 +87,14 @@ export async function PUT(req: NextRequest) {
   );
 
   try {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+  if (authErr || !user || user.email?.toLowerCase() !== 'theurbanauto@gmail.com') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
     const body = await req.json();
     const { id, ...updateData } = body;
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
@@ -105,6 +129,14 @@ export async function DELETE(req: NextRequest) {
   );
 
   try {
+  const authHeader = req.headers.get('authorization');
+  if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+  if (authErr || !user || user.email?.toLowerCase() !== 'theurbanauto@gmail.com') {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
 
