@@ -1483,7 +1483,7 @@ export default function AdminPanel() {
                   <label className="text-xs font-semibold text-gray-500 uppercase mb-3 block">Service Allowances (Backend Redemption)</label>
                   <p className="text-[10px] text-gray-500 mb-2 leading-tight">Define exactly how many times a user can redeem specific services for free when they buy this package. Services mapped here will automatically be 100% discounted during booking checkout.</p>
                   <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2">
-                     {appServices.map(service => (
+                     {services.map(service => (
                         <div key={service.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-xl border border-gray-100">
                            <div className="flex-1">
                                <p className="text-sm font-bold text-gray-900">{service.name}</p>
