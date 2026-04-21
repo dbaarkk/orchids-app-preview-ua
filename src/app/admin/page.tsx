@@ -1529,15 +1529,23 @@ export default function AdminPanel() {
 
                     try {
                       if (editingPackage) {
-                        await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/packages`, { method: 'PUT', body: JSON.stringify({ id: editingPackage.id, ...body }) });
+                        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/packages`, { method: 'PUT', body: JSON.stringify({ id: editingPackage.id, ...body }) });
+                        if (!res.ok) {
+                           const d = await res.json();
+                           throw new Error(d.error || 'Update failed');
+                        }
                         toast.success('Package updated');
                       } else {
-                        await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/packages`, { method: 'POST', body: JSON.stringify(body) });
+                        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/packages`, { method: 'POST', body: JSON.stringify(body) });
+                        if (!res.ok) {
+                           const d = await res.json();
+                           throw new Error(d.error || 'Creation failed');
+                        }
                         toast.success('Package created');
                       }
                       setShowPackageModal(false);
                       fetchPackages();
-                    } catch { toast.error('Failed to save package'); }
+                    } catch (e: any) { toast.error(e.message || 'Failed to save package'); }
                   }}
                   className="w-full py-4 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition-colors"
                 >
