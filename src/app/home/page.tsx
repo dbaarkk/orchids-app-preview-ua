@@ -79,6 +79,12 @@ export default function HomePage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push('/packages')}
+              className="px-3 py-1.5 bg-blue-500 text-white text-xs font-medium rounded-lg text-center h-10 flex items-center justify-center"
+            >
+              Packages
+            </button>
             <a 
               href="tel:+918889822220"
               className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center"
@@ -169,12 +175,6 @@ export default function HomePage() {
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => router.push('/packages')}
-                  className="px-3 py-1.5 bg-blue-500 text-white text-xs font-medium rounded-lg text-center"
-                >
-                  Packages
-                </button>
               </div>
             </div>
           </div>

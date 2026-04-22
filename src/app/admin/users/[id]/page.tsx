@@ -261,6 +261,7 @@ export default function UserDetailPage() {
       toast.success(action.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) + ' successful');
       const fresh = await adminFetch('user-detail', { userId });
       setProfile(fresh.profile);
+      setUserPackages(fresh.user_packages || []);
     } catch { toast.error('Action failed'); }
     setActionLoading(null);
   };

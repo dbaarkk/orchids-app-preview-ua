@@ -67,16 +67,18 @@ export async function GET(request: NextRequest) {
     }
 
     if (resource === 'user-detail' && userId) {
-      const [profileRes, bookingsRes, transactionsRes] = await Promise.all([
+      const [profileRes, bookingsRes, transactionsRes, userPackagesRes] = await Promise.all([
         adminClient.from('profiles').select('*').eq('id', userId).single(),
         adminClient.from('bookings').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         adminClient.from('wallet_transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        adminClient.from('user_packages').select('*, packages(*)').eq('user_id', userId).order('created_at', { ascending: false }),
       ]);
       if (profileRes.error) return NextResponse.json({ error: profileRes.error.message }, { status: 500 });
       return NextResponse.json({
         profile: profileRes.data,
         bookings: bookingsRes.data || [],
         transactions: transactionsRes.data || [],
+        user_packages: userPackagesRes.data || [],
       });
     }
 
