@@ -104,15 +104,26 @@ export default function PackagesPage() {
                 <div className="p-5 flex-1 flex flex-col">
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">What's Included</p>
                   <ul className="space-y-2.5 mb-6 flex-1">
-                    {Object.entries(pkg.service_allowances || {}).map(([serviceId, count], idx) => {
-                      const svc = appServices.find(s => s.id === serviceId);
-                      return (
-                        <li key={idx} className="flex items-start gap-2">
-                          <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                          <span className="text-sm font-bold text-gray-900">{count as number}x <span className="font-medium text-gray-700">{svc ? svc.name : serviceId}</span></span>
-                        </li>
-                      );
-                    })}
+                    {Array.isArray(pkg.service_allowances)
+                      ? pkg.service_allowances.map((s: string, idx: number) => {
+                          const svc = appServices.find(as => as.id === s);
+                          return (
+                            <li key={idx} className="flex items-start gap-2">
+                              <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                              <span className="text-sm font-bold text-gray-900">1x <span className="font-medium text-gray-700">{svc ? svc.name : s}</span></span>
+                            </li>
+                          );
+                        })
+                      : Object.entries(pkg.service_allowances || {}).map(([serviceId, count], idx) => {
+                          const svc = appServices.find(s => s.id === serviceId);
+                          return (
+                            <li key={idx} className="flex items-start gap-2">
+                              <Check className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
+                              <span className="text-sm font-bold text-gray-900">{count as number}x <span className="font-medium text-gray-700">{svc ? svc.name : serviceId}</span></span>
+                            </li>
+                          );
+                        })
+                    }
                   </ul>
 
                   <button
