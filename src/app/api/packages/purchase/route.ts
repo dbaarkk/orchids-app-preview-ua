@@ -52,7 +52,8 @@ export async function POST(req: NextRequest) {
       user_id: userId,
       package_id: packageId,
       remaining_allowances: pkg.service_allowances,
-      status: paymentMethod === 'wallet' ? 'active' : 'pending_payment'
+      status: 'active',
+      payment_method: paymentMethod
     };
 
     // In case service_allowances is an array (legacy) and the DB expects a JSON dictionary,

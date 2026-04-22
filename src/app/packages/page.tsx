@@ -21,6 +21,17 @@ export default function PackagesPage() {
   const [packages, setPackages] = useState<PackageData[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const getParsedAllowances = (allowances: any) => {
+    if (typeof allowances === 'string') {
+      try {
+        return JSON.parse(allowances);
+      } catch (e) {
+        return allowances;
+      }
+    }
+    return allowances;
+  };
+
   useEffect(() => {
     fetchPackages();
   }, []);
@@ -104,8 +115,10 @@ export default function PackagesPage() {
                 <div className="p-5 flex-1 flex flex-col">
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">What's Included</p>
                   <ul className="space-y-2.5 mb-6 flex-1">
-                    {Array.isArray(pkg.service_allowances)
-                      ? pkg.service_allowances.map((s: string, idx: number) => {
+                    {(() => {
+                      const allowances = getParsedAllowances(pkg.service_allowances);
+                      if (Array.isArray(allowances)) {
+                        return allowances.map((s: string, idx: number) => {
                           const svc = appServices.find(as => as.id === s);
                           return (
                             <li key={idx} className="flex items-start gap-2">
@@ -113,8 +126,9 @@ export default function PackagesPage() {
                               <span className="text-sm font-bold text-gray-900">1x <span className="font-medium text-gray-700">{svc ? svc.name : s}</span></span>
                             </li>
                           );
-                        })
-                      : Object.entries(pkg.service_allowances || {}).map(([serviceId, count], idx) => {
+                        });
+                      } else {
+                        return Object.entries(allowances || {}).map(([serviceId, count], idx) => {
                           const svc = appServices.find(s => s.id === serviceId);
                           return (
                             <li key={idx} className="flex items-start gap-2">
@@ -122,8 +136,9 @@ export default function PackagesPage() {
                               <span className="text-sm font-bold text-gray-900">{count as number}x <span className="font-medium text-gray-700">{svc ? svc.name : serviceId}</span></span>
                             </li>
                           );
-                        })
-                    }
+                        });
+                      }
+                    })()}
                   </ul>
 
                   <button

@@ -13,6 +13,17 @@ export default function ActivePackagesPage() {
   const [packages, setPackages] = useState<any[]>([]);
   const [loadingPackages, setLoadingPackages] = useState(true);
 
+  const getParsedAllowances = (allowances: any) => {
+    if (typeof allowances === 'string') {
+      try {
+        return JSON.parse(allowances);
+      } catch (e) {
+        return allowances;
+      }
+    }
+    return allowances;
+  };
+
   useEffect(() => {
     if (!isLoading && !user) {
       router.replace('/login?redirect=/packages/active');
@@ -120,20 +131,38 @@ export default function ActivePackagesPage() {
                       <span className="text-[10px] text-gray-400 font-normal">Auto-updates on booking</span>
                   </h4>
                   <ul className="space-y-2">
-                    {Object.entries(pkg.remaining_allowances || {}).map(([serviceId, count]: [string, any]) => {
-                      const serviceDef = appServices.find(s => s.id === serviceId);
-                      const displayName = serviceDef ? serviceDef.name : serviceId;
-                      return (
-                          <li key={serviceId} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
-                            <span className="text-sm font-medium text-gray-700">{displayName}</span>
-                            <span className={`text-xs font-bold px-2 py-0.5 rounded shadow-sm ${count > 0 ? 'bg-white text-gray-900 border border-gray-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-                                {count as number} left
-                            </span>
-                          </li>
-                      );
-                    })}
+                    {(() => {
+                      const allowances = getParsedAllowances(pkg.remaining_allowances);
+                      if (Array.isArray(allowances)) {
+                        return allowances.map((serviceId: string, idx: number) => {
+                          const serviceDef = appServices.find(s => s.id === serviceId);
+                          const displayName = serviceDef ? serviceDef.name : serviceId;
+                          return (
+                            <li key={idx} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
+                              <span className="text-sm font-medium text-gray-700">{displayName}</span>
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded shadow-sm bg-white text-gray-900 border border-gray-200`}>
+                                  1 left
+                              </span>
+                            </li>
+                          );
+                        });
+                      } else {
+                        return Object.entries(allowances || {}).map(([serviceId, count]: [string, any]) => {
+                          const serviceDef = appServices.find(s => s.id === serviceId);
+                          const displayName = serviceDef ? serviceDef.name : serviceId;
+                          return (
+                              <li key={serviceId} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
+                                <span className="text-sm font-medium text-gray-700">{displayName}</span>
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded shadow-sm ${count > 0 ? 'bg-white text-gray-900 border border-gray-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                                    {count as number} left
+                                </span>
+                              </li>
+                          );
+                        });
+                      }
+                    })()}
                   </ul>
-                  {Object.keys(pkg.remaining_allowances || {}).length === 0 && (
+                  {(!getParsedAllowances(pkg.remaining_allowances) || Object.keys(getParsedAllowances(pkg.remaining_allowances) || {}).length === 0) && (
                       <div className="text-sm text-gray-500 italic">
                         <p>No services found in this package.</p>
                       </div>
