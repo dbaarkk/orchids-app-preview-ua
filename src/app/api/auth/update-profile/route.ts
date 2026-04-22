@@ -22,6 +22,17 @@ export async function POST(request: Request) {
       { auth: { autoRefreshToken: false, persistSession: false } }
     );
 
+
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user: authUser }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+
+    if (authErr || !authUser || authUser.id !== userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     // 1. Update auth.users if email or name changes
     const authUpdateData: any = {};
     if (email) authUpdateData.email = email;

@@ -548,6 +548,83 @@ export default function ProfilePage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {showEditModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowEditModal(false)}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">Edit Profile</h3>
+                <button onClick={() => setShowEditModal(false)} className="p-1"><X className="w-5 h-5 text-gray-400" /></button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1.5 block">Full Name</label>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    placeholder="Enter your name"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1.5 block">Email Address</label>
+                  <input
+                    type="email"
+                    value={editForm.email}
+                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                    placeholder="Enter your email"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!editForm.name.trim()) return toast.error('Name is required');
+                    setEditLoading(true);
+                    try {
+
+                      // Get token
+                      const tokenStr = localStorage.getItem(`sb-${process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1].split('.')[0]}-auth-token`);
+                      let token = '';
+                      if (tokenStr) {
+                          try {
+                              token = JSON.parse(tokenStr).access_token;
+                          } catch (e) {}
+                      }
+
+                      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/update-profile`, {
+                        method: 'POST',
+                        headers: {
+                           'Content-Type': 'application/json',
+                           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                        },
+                        body: JSON.stringify({ userId: user?.id, name: editForm.name, email: editForm.email })
+                      });
+
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error);
+
+                      if (refreshUser) await refreshUser();
+                      toast.success('Profile updated successfully');
+                      setShowEditModal(false);
+                    } catch (e: any) {
+                      toast.error(e.message || 'Failed to update profile');
+                    }
+                    setEditLoading(false);
+                  }}
+                  disabled={editLoading}
+                  className="w-full py-3 bg-primary text-white rounded-xl text-sm font-bold disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {editLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Save Changes
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

@@ -7,7 +7,7 @@ import {
   ArrowLeft, User, Phone, Mail, MapPin, Calendar, Loader2, IndianRupee,
   ShieldCheck, ShieldX, Ban, CheckCircle, KeyRound, Car, Home, Truck,
   FileText, AlertTriangle, Ticket, Plus, Trash2, ToggleLeft,
-  ToggleRight, Eye, EyeOff, X, Clock, ArrowUpRight, ArrowDownLeft, Package
+  ToggleRight, Eye, EyeOff, X, Clock, ArrowUpRight, ArrowDownLeft, Package as PackageIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
@@ -110,6 +110,7 @@ export default function UserDetailPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [userPackages, setUserPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [walletAmount, setWalletAmount] = useState('');
@@ -174,6 +175,7 @@ export default function UserDetailPage() {
       setBookings(userDetail.bookings || []);
       setTransactions(userDetail.transactions || []);
       setCoupons(couponsData.data || []);
+      setUserPackages(userDetail.user_packages || []);
     } catch {
       toast.error('Failed to load user data');
     }
@@ -717,6 +719,99 @@ export default function UserDetailPage() {
                     )}
                   </AnimatePresence>
                 </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+
+
+        {/* Package as PackageIcons Section */}
+        <div className="mt-8 mb-8">
+          <div className="flex items-center justify-between mb-3 px-1">
+            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+              <PackageIcon className="w-4 h-4 text-orange-600" />
+              Active Packages
+              <span className="text-xs font-normal text-gray-400">({(userPackages || []).length})</span>
+            </h3>
+          </div>
+          {(userPackages || []).length === 0 ? (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+              <PackageIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-400">No active packages</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {(userPackages || []).map((pkg: any) => (
+                <div key={pkg.id} className="bg-white rounded-2xl shadow-sm border border-orange-100 overflow-hidden">
+                  <div className="p-4 bg-orange-50/50 border-b border-orange-100 flex items-center justify-between">
+                    <div>
+                       <h4 className="font-bold text-gray-900 text-sm">{pkg.packages?.name || 'Package'}</h4>
+                       <p className="text-xs text-orange-600 font-bold capitalize">{pkg.status}</p>
+                    </div>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    {Object.entries(pkg.remaining_allowances || {}).map(([serviceId, count]: [string, any]) => {
+                      const svc = appServices.find((s: any) => s.id === serviceId);
+                      return (
+                        <div key={serviceId} className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-700">{svc ? svc.name : serviceId}</span>
+                          <div className="flex items-center gap-3">
+                             <button
+                               onClick={async () => {
+                                 const newAllowances = { ...pkg.remaining_allowances, [serviceId]: Math.max(0, count - 1) };
+                                 try {
+                                   await adminAction({ action: 'update-user-package', packageId: pkg.id, remaining_allowances: newAllowances });
+                                   fetchAll();
+                                 } catch (e: any) { toast.error(e.message); }
+                               }}
+                               className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200"
+                             >-</button>
+                             <span className="text-sm font-bold text-gray-900 w-4 text-center">{count}</span>
+                             <button
+                               onClick={async () => {
+                                 const newAllowances = { ...pkg.remaining_allowances, [serviceId]: count + 1 };
+                                 try {
+                                   await adminAction({ action: 'update-user-package', packageId: pkg.id, remaining_allowances: newAllowances });
+                                   fetchAll();
+                                 } catch (e: any) { toast.error(e.message); }
+                               }}
+                               className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 hover:bg-orange-200"
+                             >+</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    <div className="pt-3 mt-3 border-t border-orange-100/50 flex gap-2">
+                       <select
+                         id={`add-svc-${pkg.id}`}
+                         className="flex-1 text-sm rounded-lg border-gray-200 py-1.5 px-2 bg-gray-50 focus:border-orange-500 outline-none"
+                       >
+                         <option value="">Add service...</option>
+                         {appServices.filter(s => !(pkg.remaining_allowances || {})[s.id]).map(s => (
+                           <option key={s.id} value={s.id}>{s.name}</option>
+                         ))}
+                       </select>
+                       <button
+                         onClick={async () => {
+                           const selectEl = document.getElementById(`add-svc-${pkg.id}`) as HTMLSelectElement;
+                           const svcId = selectEl?.value;
+                           if (!svcId) return toast.error('Select a service first');
+
+                           const newAllowances = { ...pkg.remaining_allowances, [svcId]: 1 };
+                           try {
+                             await adminAction({ action: 'update-user-package', packageId: pkg.id, remaining_allowances: newAllowances });
+                             selectEl.value = '';
+                             fetchAll();
+                           } catch (e: any) { toast.error(e.message); }
+                         }}
+                         className="px-3 py-1.5 bg-orange-100 text-orange-700 text-xs font-bold rounded-lg hover:bg-orange-200 whitespace-nowrap"
+                       >
+                         Add
+                       </button>
+                    </div>
+                  </div>
+                </div>
               ))}
             </div>
           )}

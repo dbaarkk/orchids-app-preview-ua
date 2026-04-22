@@ -207,6 +207,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
+
+    if (action === 'update-user-package') {
+      const { packageId, remaining_allowances } = body;
+      if (!packageId || !remaining_allowances) return NextResponse.json({ error: 'Missing packageId or allowances' }, { status: 400 });
+
+      const { data, error } = await adminClient
+        .from('user_packages')
+        .update({ remaining_allowances })
+        .eq('id', packageId)
+        .select()
+        .single();
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json(data);
+    }
+
     if (action === 'add-wallet-money') {
       if (!userId || !amount || amount <= 0) {
         return NextResponse.json({ error: 'User ID and valid amount required' }, { status: 400 });

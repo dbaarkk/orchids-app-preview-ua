@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       .from('user_packages')
       .select('*, packages(*)')
       .eq('user_id', userId)
-      .eq('status', 'active');
+      .in('status', ['active', 'pending_payment']);
 
     if (error) {
       if (error.code === '42P01') return NextResponse.json([]);

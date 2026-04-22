@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { services } from '@/lib/services-data';
-import { ArrowLeft, Loader2, Ticket, Check, X, Edit3, Clock, HelpCircle, Copy, ChevronLeft, ChevronRight, Wallet } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Package as PackageIcon, Loader2, Ticket, Check, X, Edit3, Clock, HelpCircle, Copy, ChevronLeft, ChevronRight, Wallet } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import AddressForm from '@/components/AddressForm';
@@ -41,6 +41,34 @@ export default function BookingSummaryPage() {
     const offersRef = useRef<HTMLDivElement>(null);
     const [canScrollLeft, setCanScrollLeft] = useState(false);
     const [canScrollRight, setCanScrollRight] = useState(false);
+
+
+  useEffect(() => {
+    if (user && summaryData) {
+      // Fetch user's active packages to see if any apply to this service
+      fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/packages?userId=${user.id}`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            // Filter packages that cover the selected service
+            const applicablePackages = data.filter(pkg => {
+              const serviceId = summaryData.selectedServices?.[0] || summaryData.service_id;
+              if (!serviceId) return false;
+              // Check if the service is in the package and has > 0 allowances
+              return pkg.remaining_allowances && pkg.remaining_allowances[serviceId] > 0;
+            });
+            setActivePackages(applicablePackages);
+
+            // Auto apply the first applicable package if we haven't already
+            if (applicablePackages.length > 0 && !appliedPackage) {
+              setAppliedPackage(applicablePackages[0]);
+              toast.success(`Package "${applicablePackages[0].packages?.name || 'Active'}" applied automatically!`);
+            }
+          }
+        })
+        .catch(err => console.error("Failed to load packages", err));
+    }
+  }, [user, summaryData, appliedPackage]);
 
   useEffect(() => {
     if (!isLoading && !user) {
@@ -114,11 +142,16 @@ export default function BookingSummaryPage() {
     return { id, name: s?.name || id, price };
   });
 
+
   const totalAmount = summaryData.totalAmount || 0;
-  const discountAmount = appliedCoupon
-    ? Math.round((totalAmount * appliedCoupon.discount_percent) / 100)
-    : 0;
-  const finalAmount = totalAmount - discountAmount;
+  const isPackageApplied = !!appliedPackage;
+
+  const discountAmount = isPackageApplied
+    ? totalAmount
+    : (appliedCoupon ? Math.round((totalAmount * appliedCoupon.discount_percent) / 100) : 0);
+
+  const finalAmount = isPackageApplied ? 0 : totalAmount - discountAmount;
+
     const walletBalance = user.walletBalance ?? 0;
   const canPayWithWallet = walletBalance >= finalAmount && finalAmount > 0;
 
@@ -226,7 +259,7 @@ export default function BookingSummaryPage() {
             paymentStatus: 'paid',
             couponCode: appliedCoupon?.code || null,
             discountAmount,
-            packageId: appliedPackage?.id || summaryData.package_id || null,
+            package_id: appliedPackage?.id || summaryData.package_id || null,
             service_id: summaryData.selectedServices?.[0] || null,
           });
 
@@ -267,7 +300,7 @@ export default function BookingSummaryPage() {
         paymentStatus: 'unpaid',
         couponCode: appliedCoupon?.code || null,
         discountAmount,
-        packageId: appliedPackage?.id || summaryData.package_id || null,
+        package_id: appliedPackage?.id || summaryData.package_id || null,
         service_id: summaryData.selectedServices?.[0] || null,
       });
 

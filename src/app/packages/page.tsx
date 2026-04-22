@@ -28,7 +28,7 @@ export default function PackagesPage() {
   const fetchPackages = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin/packages`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/packages/all`);
       if (res.ok) {
         const data = await res.json();
         setPackages(data.filter((pkg: any) => pkg.active) || []);
