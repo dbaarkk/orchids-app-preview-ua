@@ -13,15 +13,34 @@ export default function ActivePackagesPage() {
   const [packages, setPackages] = useState<any[]>([]);
   const [loadingPackages, setLoadingPackages] = useState(true);
 
-  const getParsedAllowances = (allowances: any) => {
-    if (typeof allowances === 'string') {
+  const getNormalizedAllowances = (allowances: any, defaultAllowances: any = null): Record<string, number> => {
+    let parsed = allowances || defaultAllowances;
+    if (typeof parsed === 'string') {
       try {
-        return JSON.parse(allowances);
+        parsed = JSON.parse(parsed);
       } catch (e) {
-        return allowances;
+        // failed parse
       }
     }
-    return allowances;
+
+    if (typeof parsed === 'string') {
+        try {
+            parsed = JSON.parse(parsed); // Catch double stringified
+        } catch(e) {}
+    }
+
+    if (!parsed) return {};
+
+    const normalized: Record<string, number> = {};
+    if (Array.isArray(parsed)) {
+      parsed.forEach((s: any) => {
+        normalized[s] = 1;
+      });
+    } else if (typeof parsed === 'object') {
+      Object.assign(normalized, parsed);
+    }
+
+    return normalized;
   };
 
   useEffect(() => {
@@ -131,39 +150,21 @@ export default function ActivePackagesPage() {
                       <span className="text-[10px] text-gray-400 font-normal">Auto-updates on booking</span>
                   </h4>
                   <ul className="space-y-2">
-                    {(() => {
-                      const allowances = getParsedAllowances(pkg.remaining_allowances);
-                      if (Array.isArray(allowances)) {
-                        return allowances.map((serviceId: string, idx: number) => {
-                          const serviceDef = appServices.find(s => s.id === serviceId);
-                          const displayName = serviceDef ? serviceDef.name : serviceId;
-                          return (
-                            <li key={idx} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
-                              <span className="text-sm font-medium text-gray-700">{displayName}</span>
-                              <span className={`text-xs font-bold px-2 py-0.5 rounded shadow-sm bg-white text-gray-900 border border-gray-200`}>
-                                  1 left
-                              </span>
-                            </li>
-                          );
-                        });
-                      } else {
-                        return Object.entries(allowances || {}).map(([serviceId, count]: [string, any]) => {
-                          const serviceDef = appServices.find(s => s.id === serviceId);
-                          const displayName = serviceDef ? serviceDef.name : serviceId;
-                          return (
-                              <li key={serviceId} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
-                                <span className="text-sm font-medium text-gray-700">{displayName}</span>
-                                <span className={`text-xs font-bold px-2 py-0.5 rounded shadow-sm ${count > 0 ? 'bg-white text-gray-900 border border-gray-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
-                                    {count as number} left
-                                </span>
-                              </li>
-                          );
-                        });
-                      }
-                    })()}
+                    {Object.entries(getNormalizedAllowances(pkg.remaining_allowances, pkg.packages?.service_allowances)).map(([serviceId, count]: [string, any]) => {
+                      const serviceDef = appServices.find(s => s.id === serviceId);
+                      const displayName = serviceDef ? serviceDef.name : serviceId;
+                      return (
+                          <li key={serviceId} className="flex items-center justify-between bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
+                            <span className="text-sm font-medium text-gray-700">{displayName}</span>
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded shadow-sm ${count > 0 ? 'bg-white text-gray-900 border border-gray-200' : 'bg-red-50 text-red-600 border border-red-100'}`}>
+                                {count as number} left
+                            </span>
+                          </li>
+                      );
+                    })}
                   </ul>
-                  {(!getParsedAllowances(pkg.remaining_allowances) || Object.keys(getParsedAllowances(pkg.remaining_allowances) || {}).length === 0) && (
-                      <div className="text-sm text-gray-500 italic">
+                  {Object.keys(getNormalizedAllowances(pkg.remaining_allowances, pkg.packages?.service_allowances)).length === 0 && (
+                      <div className="text-sm text-gray-500 italic mt-3">
                         <p>No services found in this package.</p>
                       </div>
                   )}

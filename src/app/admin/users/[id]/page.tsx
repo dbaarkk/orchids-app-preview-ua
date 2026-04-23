@@ -106,15 +106,34 @@ export default function UserDetailPage() {
   const params = useParams();
   const userId = params.id as string;
 
-  const getParsedAllowances = (allowances: any) => {
-    if (typeof allowances === 'string') {
+  const getNormalizedAllowances = (allowances: any, defaultAllowances: any = null): Record<string, number> => {
+    let parsed = allowances || defaultAllowances;
+    if (typeof parsed === 'string') {
       try {
-        return JSON.parse(allowances);
+        parsed = JSON.parse(parsed);
       } catch (e) {
-        return allowances;
+        // failed parse
       }
     }
-    return allowances;
+
+    if (typeof parsed === 'string') {
+        try {
+            parsed = JSON.parse(parsed); // Catch double stringified
+        } catch(e) {}
+    }
+
+    if (!parsed) return {};
+
+    const normalized: Record<string, number> = {};
+    if (Array.isArray(parsed)) {
+      parsed.forEach((s: any) => {
+        normalized[s] = 1;
+      });
+    } else if (typeof parsed === 'object') {
+      Object.assign(normalized, parsed);
+    }
+
+    return normalized;
   };
 
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -762,54 +781,39 @@ export default function UserDetailPage() {
                     </div>
                   </div>
                   <div className="p-4 space-y-3">
-                    {(() => {
-                      const allowances = getParsedAllowances(pkg.remaining_allowances) || {};
-                      if (Array.isArray(allowances)) {
-                        return allowances.map((serviceId: string, idx: number) => {
-                          const svc = appServices.find((s: any) => s.id === serviceId);
-                          return (
-                            <div key={idx} className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-gray-700">{svc ? svc.name : serviceId}</span>
-                              <div className="flex items-center gap-3">
-                                <span className="text-sm font-bold text-gray-900 w-4 text-center">1</span>
-                              </div>
-                            </div>
-                          );
-                        });
-                      } else {
-                        return Object.entries(allowances || {}).map(([serviceId, count]: [string, any]) => {
-                          const svc = appServices.find((s: any) => s.id === serviceId);
-                          return (
-                            <div key={serviceId} className="flex items-center justify-between">
-                              <span className="text-sm font-medium text-gray-700">{svc ? svc.name : serviceId}</span>
-                              <div className="flex items-center gap-3">
-                                <button
-                                  onClick={async () => {
-                                    const newAllowances = { ...allowances, [serviceId]: Math.max(0, count - 1) };
-                                    try {
-                                      await adminAction({ action: 'update-user-package', packageId: pkg.id, remaining_allowances: newAllowances });
-                                      fetchAll();
-                                    } catch (e: any) { toast.error(e.message); }
-                                  }}
-                                  className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200"
-                                >-</button>
-                                <span className="text-sm font-bold text-gray-900 w-4 text-center">{count as number}</span>
-                                <button
-                                  onClick={async () => {
-                                    const newAllowances = { ...allowances, [serviceId]: count + 1 };
-                                    try {
-                                      await adminAction({ action: 'update-user-package', packageId: pkg.id, remaining_allowances: newAllowances });
-                                      fetchAll();
-                                    } catch (e: any) { toast.error(e.message); }
-                                  }}
-                                  className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 hover:bg-orange-200"
-                                >+</button>
-                              </div>
-                            </div>
-                          );
-                        });
-                      }
-                    })()}
+                    {Object.entries(getNormalizedAllowances(pkg.remaining_allowances, pkg.packages?.service_allowances)).map(([serviceId, count]: [string, any]) => {
+                      const svc = appServices.find((s: any) => s.id === serviceId);
+                      return (
+                        <div key={serviceId} className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-700">{svc ? svc.name : serviceId}</span>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={async () => {
+                                const currentAllowances = getNormalizedAllowances(pkg.remaining_allowances, pkg.packages?.service_allowances);
+                                const newAllowances = { ...currentAllowances, [serviceId]: Math.max(0, count - 1) };
+                                try {
+                                  await adminAction({ action: 'update-user-package', packageId: pkg.id, remaining_allowances: newAllowances });
+                                  fetchAll();
+                                } catch (e: any) { toast.error(e.message); }
+                              }}
+                              className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200"
+                            >-</button>
+                            <span className="text-sm font-bold text-gray-900 w-4 text-center">{count as number}</span>
+                            <button
+                              onClick={async () => {
+                                const currentAllowances = getNormalizedAllowances(pkg.remaining_allowances, pkg.packages?.service_allowances);
+                                const newAllowances = { ...currentAllowances, [serviceId]: count + 1 };
+                                try {
+                                  await adminAction({ action: 'update-user-package', packageId: pkg.id, remaining_allowances: newAllowances });
+                                  fetchAll();
+                                } catch (e: any) { toast.error(e.message); }
+                              }}
+                              className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 hover:bg-orange-200"
+                            >+</button>
+                          </div>
+                        </div>
+                      );
+                    })}
 
                     <div className="pt-3 mt-3 border-t border-orange-100/50 flex gap-2">
                        <select
@@ -817,7 +821,7 @@ export default function UserDetailPage() {
                          className="flex-1 text-sm rounded-lg border-gray-200 py-1.5 px-2 bg-gray-50 focus:border-orange-500 outline-none"
                        >
                          <option value="">Add service...</option>
-                         {appServices.filter(s => !(getParsedAllowances(pkg.remaining_allowances) || {})[s.id]).map(s => (
+                         {appServices.filter(s => !(getNormalizedAllowances(pkg.remaining_allowances, pkg.packages?.service_allowances))[s.id]).map(s => (
                            <option key={s.id} value={s.id}>{s.name}</option>
                          ))}
                        </select>
@@ -827,7 +831,7 @@ export default function UserDetailPage() {
                            const svcId = selectEl?.value;
                            if (!svcId) return toast.error('Select a service first');
 
-                           const currentAllowances = getParsedAllowances(pkg.remaining_allowances) || {};
+                           const currentAllowances = getNormalizedAllowances(pkg.remaining_allowances, pkg.packages?.service_allowances);
                            const newAllowances = { ...currentAllowances, [svcId]: 1 };
                            try {
                              await adminAction({ action: 'update-user-package', packageId: pkg.id, remaining_allowances: newAllowances });
