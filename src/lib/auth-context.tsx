@@ -72,7 +72,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const ADMIN_EMAIL = 'pilot@hashtaggarage.in';
+const ADMIN_EMAIL = 'theurbanauto@gmail.com';
 
 function formatAddress(addr?: UserAddress): string {
   if (!addr || !addr.line1) return '';

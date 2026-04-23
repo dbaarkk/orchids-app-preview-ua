@@ -10,7 +10,7 @@ export async function GET() {
       auth: { autoRefreshToken: false, persistSession: false }
     });
 
-    const adminEmail = 'pilot@hashtaggarage.in';
+    const adminEmail = 'theurbanauto@gmail.com';
     const adminPin = '1234';
     const hashedPassword = formatPinAsPassword(adminPin);
 

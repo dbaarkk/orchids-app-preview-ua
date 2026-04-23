@@ -12,7 +12,7 @@ export async function PUT(req: Request) {
   if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-  if (authErr || !user || user.email?.toLowerCase() !== 'pilot@hashtaggarage.in') {
+  if (authErr || !user || user.email?.toLowerCase() !== 'theurbanauto@gmail.com') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   try {
     const { email, pin } = await request.json();
 
-    if (email?.toLowerCase() === 'pilot@hashtaggarage.in') {
+    if (email?.toLowerCase() === 'theurbanauto@gmail.com') {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
       const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
       const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
