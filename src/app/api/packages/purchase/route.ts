@@ -75,39 +75,27 @@ export async function POST(req: NextRequest) {
         });
     }
 
-    const { error: insertErr } = await supabase.from('user_packages').insert([insertPayload]);
+    // Try stringifying remaining_allowances if it's an object to prevent "invalid input syntax for type integer"
+    // that sometimes occurs if PostgREST gets confused by object casting in specific column types.
+    const payloadWithJSON = { ...insertPayload };
+    if (typeof payloadWithJSON.remaining_allowances === 'object') {
+        payloadWithJSON.remaining_allowances = JSON.stringify(payloadWithJSON.remaining_allowances);
+    }
+
+    const { error: insertErr } = await supabase.from('user_packages').insert([payloadWithJSON]);
 
     if (insertErr) {
-        if (insertErr.message.includes('invalid input syntax for type integer')) {
-            // It means the remaining_allowances column is an integer, or something else.
-            // Actually it was a JSON string parsed as array, and the DB expects JSON.
-            // The exact error from user screenshot: invalid input syntax for type integer: "{"car-wash":2...}"
-            // This suggests remaining_allowances is somehow integer in db?
-            // Oh wait, looking at the error: invalid input syntax for type integer: "{"car-wash":2...}"
-            // This happens when you try to insert JSON into an integer column or when Supabase auto-infers column type.
-            // Let's try to stringify the JSON payload. Wait, if it's JSONB it takes an object.
-            // If the column is completely missing, maybe it falls back to something else, or maybe it maps to a different column.
+        // Fallback: try raw object if stringification failed
+        const fallback = await supabase.from('user_packages').insert([insertPayload]);
 
-            // Wait, what if the error is from another query?
-            // The screenshot shows: invalid input syntax for type integer: "{"car-wash":2,"interior-detailing":2,"exterior-detailing":2}"
-            // This typically happens if `pkg.service_allowances` is passed where an integer is expected.
-            // But we don't have any integer column except amount/price. Wait, package_id? No, uuid.
-        }
-
-        // Let's try inserting without remaining_allowances as a fallback, or passing it stringified
-        // The error indicates the DB column 'remaining_allowances' might not be a JSONB, or we are mapping it wrongly.
-        // Actually, if remaining_allowances is jsonb, passing an object is correct.
-        // But if the column is TEXT, we might need to stringify it.
-        // And if the column is INTEGER, this is definitely wrong.
-
-        // Let's try falling back to inserting without it, or checking if the error is exactly about it
-
-        // The most robust way to bypass type issues on insert to an unknown schema when we don't have migrations:
-        let retryPayload = { ...insertPayload };
-        delete retryPayload.remaining_allowances;
-        const retry = await supabase.from('user_packages').insert([retryPayload]);
-        if (retry.error) {
-             return NextResponse.json({ error: retry.error.message }, { status: 500 });
+        if (fallback.error) {
+             // Second Fallback: insert without remaining_allowances
+             let retryPayload = { ...insertPayload };
+             delete retryPayload.remaining_allowances;
+             const retry = await supabase.from('user_packages').insert([retryPayload]);
+             if (retry.error) {
+                  return NextResponse.json({ error: retry.error.message }, { status: 500 });
+             }
         }
     }
 

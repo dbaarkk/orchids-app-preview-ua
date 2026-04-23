@@ -48,8 +48,8 @@ export default function ContactPage() {
     {
       icon: Mail,
       label: 'Email',
-      value: 'theurbanauto@gmail.com',
-      action: () => openExternal('mailto:theurbanauto@gmail.com'),
+      value: 'pilot@hashtaggarage.in',
+      action: () => openExternal('mailto:pilot@hashtaggarage.in'),
       color: 'bg-blue-500',
     },
     {

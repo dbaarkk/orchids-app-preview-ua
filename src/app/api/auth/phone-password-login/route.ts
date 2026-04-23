@@ -34,7 +34,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Your account has been blocked. Contact support.' }, { status: 403 });
       }
 
-      if (profile.email?.toLowerCase() === 'theurbanauto@gmail.com') {
+      if (profile.email?.toLowerCase() === 'pilot@hashtaggarage.in') {
         return NextResponse.json({ error: 'Admin account must use email login.' }, { status: 403 });
       }
 

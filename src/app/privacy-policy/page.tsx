@@ -97,7 +97,7 @@ export default function PrivacyPolicyPage() {
 
           <p className="font-semibold text-gray-800 mt-3 mb-1">Deletion Requests</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li>Email: <a href="mailto:theurbanauto@gmail.com" className="text-primary hover:underline">theurbanauto@gmail.com</a></li>
+            <li>Email: <a href="mailto:pilot@hashtaggarage.in" className="text-primary hover:underline">pilot@hashtaggarage.in</a></li>
             <li>Requests are processed within 7–30 days.</li>
             <li>Some records may be retained if required by law (e.g., financial records, fraud prevention).</li>
           </ul>
@@ -129,7 +129,7 @@ export default function PrivacyPolicyPage() {
             <li>Request deletion of your data.</li>
             <li>Withdraw consent (e.g., location permission via device settings).</li>
           </ul>
-          <p className="mt-2">To exercise your rights, contact: <a href="mailto:theurbanauto@gmail.com" className="text-primary hover:underline">theurbanauto@gmail.com</a></p>
+          <p className="mt-2">To exercise your rights, contact: <a href="mailto:pilot@hashtaggarage.in" className="text-primary hover:underline">pilot@hashtaggarage.in</a></p>
         </section>
 
         <section>
@@ -156,7 +156,7 @@ export default function PrivacyPolicyPage() {
         <section>
           <h2 className="text-lg font-bold text-gray-900 mb-2">12. Contact</h2>
           <p>For privacy questions or data requests:</p>
-          <p className="mt-1">Email: <a href="mailto:theurbanauto@gmail.com" className="text-primary hover:underline">theurbanauto@gmail.com</a></p>
+          <p className="mt-1">Email: <a href="mailto:pilot@hashtaggarage.in" className="text-primary hover:underline">pilot@hashtaggarage.in</a></p>
         </section>
       </div>
     </div>

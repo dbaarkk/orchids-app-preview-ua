@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
   if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-  if (authErr || !user || user.email?.toLowerCase() !== 'theurbanauto@gmail.com') {
+  if (authErr || !user || user.email?.toLowerCase() !== 'pilot@hashtaggarage.in') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-  if (authErr || !user || user.email?.toLowerCase() !== 'theurbanauto@gmail.com') {
+  if (authErr || !user || user.email?.toLowerCase() !== 'pilot@hashtaggarage.in') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -81,7 +81,7 @@ export async function PUT(req: NextRequest) {
   if (!authHeader) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { data: { user }, error: authErr } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-  if (authErr || !user || user.email?.toLowerCase() !== 'theurbanauto@gmail.com') {
+  if (authErr || !user || user.email?.toLowerCase() !== 'pilot@hashtaggarage.in') {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 

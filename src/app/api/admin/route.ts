@@ -214,14 +214,34 @@ export async function POST(request: Request) {
       const { packageId, remaining_allowances } = body;
       if (!packageId || !remaining_allowances) return NextResponse.json({ error: 'Missing packageId or allowances' }, { status: 400 });
 
+      let updatePayload: any = { remaining_allowances };
+
+      // We attempt to stringify remaining_allowances as a robust fallback.
+      // The Postgres column might be of type 'json', 'jsonb', or 'text'.
+      // If we pass an object to a text column, or to certain postgres versions depending on how postgrest translates it, it throws:
+      // "invalid input syntax for type integer: '{"car-wash":1,...}'".
+      // Let's stringify it explicitly.
+      updatePayload.remaining_allowances = JSON.stringify(remaining_allowances);
+
       const { data, error } = await adminClient
         .from('user_packages')
-        .update({ remaining_allowances })
+        .update(updatePayload)
         .eq('id', packageId)
         .select()
         .single();
 
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (error) {
+        // If stringified version fails, try passing the raw object as fallback
+         const { data: fallbackData, error: fallbackError } = await adminClient
+            .from('user_packages')
+            .update({ remaining_allowances })
+            .eq('id', packageId)
+            .select()
+            .single();
+
+         if (fallbackError) return NextResponse.json({ error: fallbackError.message }, { status: 500 });
+         return NextResponse.json(fallbackData);
+      }
       return NextResponse.json(data);
     }
 
