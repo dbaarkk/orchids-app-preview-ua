@@ -48,10 +48,19 @@ export async function POST(req: NextRequest) {
         }]);
     }
 
+    let parsedAllowances = pkg.service_allowances;
+    if (typeof parsedAllowances === 'string') {
+        try {
+            parsedAllowances = JSON.parse(parsedAllowances);
+        } catch (e) {
+            // keep as is
+        }
+    }
+
     const insertPayload: any = {
       user_id: userId,
       package_id: packageId,
-      remaining_allowances: pkg.service_allowances,
+      remaining_allowances: parsedAllowances,
       status: 'active',
       payment_method: paymentMethod
     };
@@ -59,9 +68,9 @@ export async function POST(req: NextRequest) {
     // In case service_allowances is an array (legacy) and the DB expects a JSON dictionary,
     // we don't try to parse stringified arrays, but we will wrap arrays in an object
     // Or, actually, the user packages table remaining_allowances column is likely a JSONB
-    if (Array.isArray(pkg.service_allowances)) {
+    if (Array.isArray(parsedAllowances)) {
         insertPayload.remaining_allowances = {};
-        pkg.service_allowances.forEach((s: any) => {
+        parsedAllowances.forEach((s: any) => {
             insertPayload.remaining_allowances[s] = 1;
         });
     }

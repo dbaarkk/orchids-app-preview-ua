@@ -106,6 +106,17 @@ export default function UserDetailPage() {
   const params = useParams();
   const userId = params.id as string;
 
+  const getParsedAllowances = (allowances: any) => {
+    if (typeof allowances === 'string') {
+      try {
+        return JSON.parse(allowances);
+      } catch (e) {
+        return allowances;
+      }
+    }
+    return allowances;
+  };
+
   const [profile, setProfile] = useState<Profile | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -766,7 +777,7 @@ export default function UserDetailPage() {
                           );
                         });
                       } else {
-                        return Object.entries(allowances).map(([serviceId, count]: [string, any]) => {
+                        return Object.entries(allowances || {}).map(([serviceId, count]: [string, any]) => {
                           const svc = appServices.find((s: any) => s.id === serviceId);
                           return (
                             <div key={serviceId} className="flex items-center justify-between">
