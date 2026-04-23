@@ -2,8 +2,8 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef, useMemo, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
@@ -12,17 +12,18 @@ import Carousel, { CarouselItem } from '@/components/Carousel';
 
 type Step = 'phone' | 'otp' | 'details';
 
-export default function SignupPage() {
+function SignupContent() {
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [pin, setPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [redirecting, setRedirecting] = useState(false);
+
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect');
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpSending, setOtpSending] = useState(false);
@@ -78,6 +79,10 @@ export default function SignupPage() {
     const newErrors: Record<string, string> = {};
     if (!phone) newErrors.phone = 'Phone number is required';
     else if (!/^[6-9]\d{9}$/.test(phone)) newErrors.phone = 'Please enter a valid 10-digit phone number';
+
+    if (!pin) newErrors.pin = 'Pin is required';
+    else if (!/^\d{4}$/.test(pin)) newErrors.pin = 'Pin must be exactly 4 digits';
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -189,39 +194,18 @@ export default function SignupPage() {
       const verifyData = await verifyRes.json();
       if (!verifyRes.ok) throw new Error(verifyData.error);
 
-      toast.success('Phone verified!');
-      setStep('details');
-    } catch (err: any) {
-      toast.error(err.message || 'OTP verification failed');
-    } finally {
-      setOtpVerifying(false);
-    }
-  };
+      setLoading(true);
+      // Generate dummy user details
+      const dummyEmail = `user${Date.now()}@hashtaggarage.in`;
+      const dummyName = `User ${phone.slice(-4)}`;
 
-  const handleCreateAccount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validateDetails()) return;
-
-    setLoading(true);
-    try {
-      const checkRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/check-exists`,  {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      const checkData = await checkRes.json();
-      if (!checkRes.ok) {
-        toast.error(checkData.error);
-        setLoading(false);
-        return;
-      }
-
-      const result = await signup(name, email, phone, pin);
+      // Pass user-defined pin from step 1
+      const result = await signup(dummyName, dummyEmail, phone, pin);
 
       if (result.success) {
         setRedirecting(true);
         toast.success('Account created successfully!');
-        const dest = result.isAdmin ? '/admin' : '/home';
+        const dest = redirect || (result.isAdmin ? '/admin' : '/home');
         router.replace(dest);
         setTimeout(() => router.replace(dest), 100);
       } else {
@@ -229,8 +213,10 @@ export default function SignupPage() {
         setLoading(false);
       }
     } catch (err: any) {
-      toast.error(err.message || 'Something went wrong');
+      toast.error(err.message || 'OTP verification failed');
       setLoading(false);
+    } finally {
+      setOtpVerifying(false);
     }
   };
 
@@ -330,115 +316,6 @@ export default function SignupPage() {
     );
   }
 
-  if (step === 'details') {
-    return (
-      <div className="mobile-container bg-white min-h-screen flex flex-col px-6 py-8">
-        <Logo />
-
-        <div className="bg-green-50 rounded-xl px-4 py-3 mb-6 flex items-center gap-2">
-          <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-            <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <p className="text-sm text-green-700 font-medium">+91 {phone} verified</p>
-        </div>
-
-        <SignupCarousel />
-
-        <h2 className="text-2xl font-bold text-gray-900 mb-1">Complete Signup</h2>
-        <p className="text-gray-500 text-sm mb-6">Fill in your details to create your account</p>
-
-        <form onSubmit={handleCreateAccount} className="flex flex-col gap-4">
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Full Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your full name"
-              className={`w-full px-4 py-3 rounded-xl border ${errors.name ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm`}
-            />
-            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              className={`w-full px-4 py-3 rounded-xl border ${errors.email ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm`}
-            />
-            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Pin</label>
-            <div className="relative">
-              <input
-                type={showPin ? 'text' : 'password'}
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={4}
-                value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                placeholder="Enter 4-digit Pin"
-                className={`w-full px-4 py-3 rounded-xl border ${errors.pin ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm pr-11`}
-              />
-              <button
-                type="button"
-                onClick={() => setShowPin(!showPin)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
-              >
-                {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
-            </div>
-            {errors.pin && <p className="text-red-500 text-xs mt-1">{errors.pin}</p>}
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-1.5 block">Confirm Pin</label>
-            <input
-              type={showPin ? 'text' : 'password'}
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={4}
-              value={confirmPin}
-              onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
-              placeholder="Re-enter your Pin"
-              className={`w-full px-4 py-3 rounded-xl border ${errors.confirmPin ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm`}
-            />
-            {errors.confirmPin && <p className="text-red-500 text-xs mt-1">{errors.confirmPin}</p>}
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary text-white py-3.5 rounded-xl font-semibold text-sm mt-2 hover:bg-primary/90 transition-all disabled:opacity-60 flex items-center justify-center gap-2"
-          >
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {loading ? 'Creating Account...' : 'Create Account'}
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-gray-500 mt-6">
-          Already have an account?{' '}
-          <Link href="/login" className="text-primary font-semibold hover:underline">
-            Login
-          </Link>
-        </p>
-
-        <p className="text-center text-xs text-gray-400 mt-4">
-          By signing up, you agree to our{' '}
-          <Link href="/privacy-policy" className="text-primary hover:underline">
-            Privacy Policy
-          </Link>
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="mobile-container bg-white min-h-screen flex flex-col px-6 py-8">
@@ -465,6 +342,26 @@ export default function SignupPage() {
           {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone}</p>}
         </div>
 
+        <div>
+          <label className="text-sm font-medium text-gray-700 mb-1.5 block">Create 4-Digit Pin</label>
+          <div className="relative">
+            <input
+              type={showPin ? 'text' : 'password'}
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={4}
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+              placeholder="Set 4-digit Pin"
+              className={`w-full px-4 py-3 rounded-xl border ${errors.pin ? 'border-red-400' : 'border-gray-200'} bg-gray-50 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-sm pr-10`}
+            />
+            <button type="button" onClick={() => setShowPin(!showPin)} className="absolute right-3 top-1/2 -translate-y-1/2">
+              {showPin ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
+            </button>
+          </div>
+          {errors.pin && <p className="text-red-500 text-xs mt-1">{errors.pin}</p>}
+        </div>
+
         <button
           type="submit"
           disabled={otpSending}
@@ -477,7 +374,7 @@ export default function SignupPage() {
 
       <p className="text-center text-sm text-gray-500 mt-6">
         Already have an account?{' '}
-        <Link href="/login" className="text-primary font-semibold hover:underline">
+        <Link href={`/login${redirect ? `?redirect=${redirect}` : ''}`} className="text-primary font-semibold hover:underline">
           Login
         </Link>
       </p>
@@ -489,5 +386,17 @@ export default function SignupPage() {
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={
+      <div className="mobile-container flex items-center justify-center min-h-screen bg-white">
+        <Loader2 className="w-8 h-8 border-primary text-primary animate-spin" />
+      </div>
+    }>
+      <SignupContent />
+    </Suspense>
   );
 }

@@ -25,18 +25,12 @@ export default function HomePage() {
   const { getPrice, loaded: pricesLoaded } = useLivePrices();
 
     useEffect(() => {
-      if (!isLoading && !user) {
-        router.replace('/login');
-      }
-    }, [isLoading, user, router]);
-
-    useEffect(() => {
       if (!isLoading && user && isAdmin) {
         router.replace('/admin');
       }
     }, [isLoading, user, isAdmin, router]);
 
-  if (isLoading || !user) {
+  if (isLoading) {
     return (
       <div className="mobile-container flex items-center justify-center min-h-screen">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -85,6 +79,12 @@ export default function HomePage() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => router.push('/packages')}
+              className="px-3 py-1.5 bg-blue-500 text-white text-xs font-medium rounded-lg text-center h-10 flex items-center justify-center"
+            >
+              Packages
+            </button>
             <a 
               href="tel:+918889822220"
               className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center"
@@ -174,12 +174,8 @@ export default function HomePage() {
                   <span className="text-xs text-gray-400">9AM - 9PM</span>
                 </div>
               </div>
-              <button
-                onClick={() => router.push('/services')}
-                className="px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-lg"
-              >
-                Book
-              </button>
+              <div className="flex flex-col gap-2">
+              </div>
             </div>
           </div>
 

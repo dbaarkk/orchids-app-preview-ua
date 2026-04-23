@@ -67,16 +67,18 @@ export async function GET(request: NextRequest) {
     }
 
     if (resource === 'user-detail' && userId) {
-      const [profileRes, bookingsRes, transactionsRes] = await Promise.all([
+      const [profileRes, bookingsRes, transactionsRes, userPackagesRes] = await Promise.all([
         adminClient.from('profiles').select('*').eq('id', userId).single(),
         adminClient.from('bookings').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
         adminClient.from('wallet_transactions').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
+        adminClient.from('user_packages').select('*, packages(*)').eq('user_id', userId).order('created_at', { ascending: false }),
       ]);
       if (profileRes.error) return NextResponse.json({ error: profileRes.error.message }, { status: 500 });
       return NextResponse.json({
         profile: profileRes.data,
         bookings: bookingsRes.data || [],
         transactions: transactionsRes.data || [],
+        user_packages: userPackagesRes.data || [],
       });
     }
 
@@ -124,6 +126,54 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true });
     }
 
+    if (action === 'create-user') {
+      const { email, pin, full_name, phone } = body;
+      if (!email || !pin || !full_name || !phone) {
+        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+      }
+
+      const { data: userData, error: userError } = await adminClient.auth.admin.createUser({
+        email,
+        password: formatPinAsPassword(pin),
+        email_confirm: true,
+        user_metadata: { full_name, phone }
+      });
+
+      if (userError) {
+        return NextResponse.json({ error: userError.message }, { status: 400 });
+      }
+
+      if (userData.user) {
+        await adminClient.from('profiles').upsert([{
+          id: userData.user.id,
+          email,
+          full_name,
+          phone,
+          verified: true,
+          blocked: false,
+          updated_at: new Date().toISOString()
+        }]);
+      }
+
+      return NextResponse.json({ success: true });
+    }
+
+    if (action === 'create-booking') {
+      const { bookingData } = body;
+      if (!bookingData || !bookingData.user_id) {
+        return NextResponse.json({ error: 'Booking data and user ID required' }, { status: 400 });
+      }
+
+      const { data, error } = await adminClient
+        .from('bookings')
+        .insert([bookingData])
+        .select()
+        .single();
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 400 });
+      return NextResponse.json({ success: true, booking: data });
+    }
+
     if (action === 'delete-user') {
       if (!userId) return NextResponse.json({ error: 'User ID required' }, { status: 400 });
       const { error } = await adminClient.auth.admin.deleteUser(userId);
@@ -157,6 +207,34 @@ export async function POST(request: Request) {
       const { error } = await adminClient.from('profiles').update({ verified: false }).eq('id', userId);
       if (error) return NextResponse.json({ error: error.message }, { status: 400 });
       return NextResponse.json({ success: true });
+    }
+
+
+    if (action === 'update-user-package') {
+      const { packageId, remaining_allowances } = body;
+      if (!packageId || !remaining_allowances) return NextResponse.json({ error: 'Missing packageId or allowances' }, { status: 400 });
+
+      const { data, error } = await adminClient
+        .from('user_packages')
+        .update({ remaining_allowances })
+        .eq('id', packageId)
+        .select()
+        .single();
+
+      if (error) {
+         // If direct update fails (e.g., due to strict type casting in Supabase where remaining_allowances is expected to be a string or JSON depending on the schema),
+         // try passing the stringified object as fallback
+         const { data: fallbackData, error: fallbackError } = await adminClient
+            .from('user_packages')
+            .update({ remaining_allowances: JSON.stringify(remaining_allowances) })
+            .eq('id', packageId)
+            .select()
+            .single();
+
+         if (fallbackError) return NextResponse.json({ error: fallbackError.message }, { status: 500 });
+         return NextResponse.json(fallbackData);
+      }
+      return NextResponse.json(data);
     }
 
     if (action === 'add-wallet-money') {

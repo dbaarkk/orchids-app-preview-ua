@@ -2,16 +2,18 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import React, { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, useRef, useEffect, useMemo, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { Eye, EyeOff, Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAssetPath } from '@/lib/utils';
 
-export default function LoginPage() {
+function LoginContent() {
   const [identifier, setIdentifier] = useState(''); // Email or Phone
   const [pin, setPin] = useState('');
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get('redirect');
   const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -90,7 +92,7 @@ export default function LoginPage() {
       if (result.success) {
         setRedirecting(true);
         toast.success('Login successful!');
-        const dest = result.isAdmin ? '/admin' : '/home';
+        const dest = redirect || (result.isAdmin ? '/admin' : '/home');
         router.replace(dest);
         setTimeout(() => router.replace(dest), 100);
       } else {
@@ -200,7 +202,7 @@ export default function LoginPage() {
       if (result.success) {
         setRedirecting(true);
         toast.success('Login successful!');
-        const dest = result.isAdmin ? '/admin' : '/home';
+        const dest = redirect || (result.isAdmin ? '/admin' : '/home');
         router.replace(dest);
         setTimeout(() => router.replace(dest), 100);
       } else {
@@ -393,10 +395,22 @@ export default function LoginPage() {
 
       <p className="text-center text-sm text-gray-500 mt-8">
         Don&apos;t have an account?{' '}
-        <Link href="/signup" className="text-primary font-semibold hover:underline">
+        <Link href={`/signup${redirect ? `?redirect=${redirect}` : ''}`} className="text-primary font-semibold hover:underline">
           Sign Up
         </Link>
       </p>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="mobile-container flex items-center justify-center min-h-screen bg-white">
+        <div className="w-7 h-7 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

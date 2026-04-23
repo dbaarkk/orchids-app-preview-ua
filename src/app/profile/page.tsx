@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth-context';
 import { useNativeNotifications } from '@/hooks/useNativeNotifications';
-import { ArrowLeft, User, Mail, Phone, MapPin, LogOut, ChevronRight, HelpCircle, Info, KeyRound, Eye, EyeOff, X, Loader2, Wallet, Shield, Trash2, Lock, Bell } from 'lucide-react';
+import { ArrowLeft, Package, User, Mail, Phone, MapPin, LogOut, ChevronRight, HelpCircle, Info, KeyRound, Eye, EyeOff, X, Loader2, Wallet, Shield, Trash2, Lock, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect, useState, useRef } from 'react';
 import { toast } from 'sonner';
@@ -59,6 +59,9 @@ export default function ProfilePage() {
   const [confirmNewPin, setConfirmNewPin] = useState('');
   const [showNewPin, setShowNewPin] = useState(false);
   const [pinLoading, setPinLoading] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', email: '' });
+  const [editLoading, setEditLoading] = useState(false);
 
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpSending, setOtpSending] = useState(false);
@@ -66,11 +69,16 @@ export default function ProfilePage() {
   const [resendTimer, setResendTimer] = useState(0);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
+
+
     useEffect(() => {
         if (!isLoading && !user) {
       router.replace('/login');
         }
       }, [isLoading, user?.id]);
+
+
+
 
   useEffect(() => {
     if (resendTimer > 0) {
@@ -301,12 +309,21 @@ export default function ProfilePage() {
             </button>
           </motion.div>
 
+
+
+
         {/* Manage Section */}
         <div className="mt-4">
           <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 px-1">Manage</h3>
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
             <button
-              onClick={() => toast.info('Profile editing coming soon')}
+              onClick={() => {
+                setEditForm({
+                  name: user?.name?.startsWith('User ') ? '' : (user?.name || ''),
+                  email: user?.email?.includes('@hashtaggarage.in') ? '' : (user?.email || '')
+                });
+                setShowEditModal(true);
+              }}
               className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 transition-colors border-b border-gray-100"
             >
               <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -531,6 +548,83 @@ export default function ProfilePage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {showEditModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowEditModal(false)}>
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white rounded-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-900">Edit Profile</h3>
+                <button onClick={() => setShowEditModal(false)} className="p-1"><X className="w-5 h-5 text-gray-400" /></button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1.5 block">Full Name</label>
+                  <input
+                    type="text"
+                    value={editForm.name}
+                    onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                    placeholder="Enter your name"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 mb-1.5 block">Email Address</label>
+                  <input
+                    type="email"
+                    value={editForm.email}
+                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                    placeholder="Enter your email"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!editForm.name.trim()) return toast.error('Name is required');
+                    setEditLoading(true);
+                    try {
+
+                      // Get token
+                      const tokenStr = localStorage.getItem(`sb-${process.env.NEXT_PUBLIC_SUPABASE_URL?.split('//')[1].split('.')[0]}-auth-token`);
+                      let token = '';
+                      if (tokenStr) {
+                          try {
+                              token = JSON.parse(tokenStr).access_token;
+                          } catch (e) {}
+                      }
+
+                      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/auth/update-profile`, {
+                        method: 'POST',
+                        headers: {
+                           'Content-Type': 'application/json',
+                           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                        },
+                        body: JSON.stringify({ userId: user?.id, name: editForm.name, email: editForm.email })
+                      });
+
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error);
+
+                      if (refreshUser) await refreshUser();
+                      toast.success('Profile updated successfully');
+                      setShowEditModal(false);
+                    } catch (e: any) {
+                      toast.error(e.message || 'Failed to update profile');
+                    }
+                    setEditLoading(false);
+                  }}
+                  disabled={editLoading}
+                  className="w-full py-3 bg-primary text-white rounded-xl text-sm font-bold disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {editLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Save Changes
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }

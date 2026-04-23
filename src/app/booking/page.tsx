@@ -78,15 +78,18 @@ function BookingContent() {
     // Update draft whenever fields change
     useEffect(() => {
         if (!mounted) return;
-        const data = { selectedServices, vehicleType, vehicleNumber, vehicleMakeModel, serviceMode, date, time, notes };
+        const draftStr = localStorage.getItem('ua_booking_draft');
+        let existingDraft = {};
+        if (draftStr) {
+            try { existingDraft = JSON.parse(draftStr); } catch {}
+        }
+
+        const data = {
+            ...existingDraft,
+            selectedServices, vehicleType, vehicleNumber, vehicleMakeModel, serviceMode, date, time, notes
+        };
         localStorage.setItem('ua_booking_draft', JSON.stringify(data));
     }, [selectedServices, vehicleType, vehicleNumber, vehicleMakeModel, serviceMode, date, time, notes, mounted]);
-
-    useEffect(() => {
-        if (!isLoading && !user) {
-            router.replace('/login');
-        }
-    }, [isLoading, user, router]);
 
     useEffect(() => {
         const fetchConfig = async () => {
@@ -184,7 +187,13 @@ function BookingContent() {
 
     const validate = () => {
         const newErrors: Record<string, string> = {};
-        if (selectedServices.length === 0) newErrors.service = 'Select at least one service';
+        const draftStr = localStorage.getItem('ua_booking_draft');
+        let existingDraft: any = {};
+        if (draftStr) {
+            try { existingDraft = JSON.parse(draftStr); } catch {}
+        }
+
+        if (selectedServices.length === 0 && !existingDraft.package_id) newErrors.service = 'Select at least one service';
         if (!vehicleType) newErrors.vehicleType = 'Select vehicle type';
         if (!vehicleMakeModel.trim()) newErrors.vehicleMakeModel = 'Enter vehicle model';
         if (!date) newErrors.date = 'Select date';
@@ -210,9 +219,16 @@ function BookingContent() {
             .filter(Boolean)
             .join(', ');
 
+        const draftStr = localStorage.getItem('ua_booking_draft');
+        let existingDraft = {};
+        if (draftStr) {
+            try { existingDraft = JSON.parse(draftStr); } catch {}
+        }
+
         const summaryData = {
+            ...existingDraft,
             selectedServices,
-            serviceName: selectedServiceNames || 'Car Service',
+            serviceName: selectedServiceNames || (existingDraft as any).package_name || 'Car Service',
             vehicleType,
             vehicleNumber,
             vehicleMakeModel,
@@ -220,11 +236,17 @@ function BookingContent() {
             date,
             time,
             notes,
-            totalAmount,
+            totalAmount: (existingDraft as any).package_price ? totalAmount + (existingDraft as any).package_price : totalAmount,
             servicePrices: Object.fromEntries(selectedServices.map(id => [id, getPrice(id)])),
         };
 
         localStorage.setItem('ua_booking_draft', JSON.stringify(summaryData));
+
+        if (!user) {
+            router.push('/login?redirect=/booking/summary');
+            return;
+        }
+
         router.push('/booking/summary');
     };
 
@@ -234,6 +256,14 @@ function BookingContent() {
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
             </div>
         );
+    }
+
+    let existingDraft: any = {};
+    if (mounted) {
+        const draftStr = localStorage.getItem('ua_booking_draft');
+        if (draftStr) {
+            try { existingDraft = JSON.parse(draftStr); } catch {}
+        }
     }
 
     const mainServiceId = selectedServices[0] || serviceIdFromUrl;
@@ -250,6 +280,18 @@ function BookingContent() {
             </header>
 
             <div className="px-4 py-4 space-y-4">
+                {existingDraft?.package_id && !mainService && (
+                    <div className="bg-amber-50 rounded-2xl overflow-hidden shadow-sm border border-amber-100 p-4">
+                        <h2 className="text-xl font-bold text-amber-900 mb-1">{existingDraft.package_name}</h2>
+                        <div className="flex justify-between items-center text-sm">
+                            <span className="opacity-80 text-amber-700">Premium Package Selected</span>
+                            <span className="font-bold bg-amber-200 text-amber-800 px-3 py-1 rounded-full">
+                                ₹{existingDraft.package_price}
+                            </span>
+                        </div>
+                    </div>
+                )}
+
                 {mainService && (
                     <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
                         <div className="relative h-40 w-full">

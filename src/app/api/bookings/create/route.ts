@@ -2,14 +2,13 @@ import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
 import { sendBookingWhatsAppNotification } from '@/lib/twilio';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: { autoRefreshToken: false, persistSession: false }
-});
-
 export async function POST(request: Request) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+  const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  });
   try {
     const bookingPayload = await request.json();
 
@@ -25,6 +24,24 @@ export async function POST(request: Request) {
     }
 
     const newBooking = data[0];
+
+    // If a package was used, decrement its allowances
+    if (bookingPayload.package_id) {
+      const { data: pkgData } = await supabaseAdmin.from('user_packages').select('remaining_allowances').eq('id', bookingPayload.package_id).single();
+      if (pkgData && pkgData.remaining_allowances) {
+          const updatedAllowances = { ...pkgData.remaining_allowances };
+          const serviceName = bookingPayload.service_name || bookingPayload.serviceName;
+          const serviceId = bookingPayload.service_id;
+
+          const keyToDeduct = serviceId && updatedAllowances[serviceId] ? serviceId : serviceName;
+
+          if (keyToDeduct && updatedAllowances[keyToDeduct] && updatedAllowances[keyToDeduct] > 0) {
+              updatedAllowances[keyToDeduct] -= 1;
+              await supabaseAdmin.from('user_packages').update({ remaining_allowances: updatedAllowances }).eq('id', bookingPayload.package_id);
+          }
+      }
+    }
+
 
     // Format data for WhatsApp notification based on what's saved
     const whatsappData = {

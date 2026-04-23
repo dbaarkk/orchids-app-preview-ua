@@ -7,10 +7,22 @@ import {
   ArrowLeft, User, Phone, Mail, MapPin, Calendar, Loader2, IndianRupee,
   ShieldCheck, ShieldX, Ban, CheckCircle, KeyRound, Car, Home, Truck,
   FileText, AlertTriangle, Ticket, Plus, Trash2, ToggleLeft,
-  ToggleRight, Eye, EyeOff, X, Clock, ArrowUpRight, ArrowDownLeft,
+  ToggleRight, Eye, EyeOff, X, Clock, ArrowUpRight, ArrowDownLeft, Package as PackageIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+
+const getAuthToken = () => {
+    if (typeof window === 'undefined') return '';
+    try {
+        const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+        const key = url ? `sb-${url.split('//')[1].split('.')[0]}-auth-token` : '';
+        const tokenStr = key ? localStorage.getItem(key) : null;
+        return tokenStr ? JSON.parse(tokenStr).access_token : '';
+    } catch { return ''; }
+};
+
+import { services as appServices } from '@/lib/services-data';
 
 interface Profile {
   id: string;
@@ -71,7 +83,7 @@ interface Coupon {
 
 async function adminFetch(resource: string, params?: Record<string, string>) {
   const query = new URLSearchParams({ resource, ...params });
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin?${query}`);
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin?${query}`, { headers: { 'Authorization': `Bearer ${getAuthToken()}` } });
   const json = await res.json();
   if (!res.ok) throw new Error(json.error);
   return json;
@@ -80,7 +92,7 @@ async function adminFetch(resource: string, params?: Record<string, string>) {
 async function adminAction(body: any) {
   const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/admin`,  {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getAuthToken()}` },
     body: JSON.stringify(body),
   });
   const json = await res.json();
@@ -94,10 +106,41 @@ export default function UserDetailPage() {
   const params = useParams();
   const userId = params.id as string;
 
+  const getNormalizedAllowances = (allowances: any, defaultAllowances: any = null): Record<string, number> => {
+    let parsed = allowances || defaultAllowances;
+    if (typeof parsed === 'string') {
+      try {
+        parsed = JSON.parse(parsed);
+      } catch (e) {
+        // failed parse
+      }
+    }
+
+    if (typeof parsed === 'string') {
+        try {
+            parsed = JSON.parse(parsed); // Catch double stringified
+        } catch(e) {}
+    }
+
+    if (!parsed) return {};
+
+    const normalized: Record<string, number> = {};
+    if (Array.isArray(parsed)) {
+      parsed.forEach((s: any) => {
+        normalized[s] = 1;
+      });
+    } else if (typeof parsed === 'object') {
+      Object.assign(normalized, parsed);
+    }
+
+    return normalized;
+  };
+
   const [profile, setProfile] = useState<Profile | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [userPackages, setUserPackages] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [walletAmount, setWalletAmount] = useState('');
@@ -141,6 +184,10 @@ export default function UserDetailPage() {
 
   const [expandedBooking, setExpandedBooking] = useState<string | null>(null);
 
+  const [showCreateBookingModal, setShowCreateBookingModal] = useState(false);
+  const [createBookingForm, setCreateBookingForm] = useState({ serviceName: '', date: '', time: '', vehicleType: '', amount: '' });
+  const [creatingBooking, setCreatingBooking] = useState(false);
+
   useEffect(() => {
     if (!isLoading && (!user || !isAdmin)) {
       router.replace('/login');
@@ -158,6 +205,7 @@ export default function UserDetailPage() {
       setBookings(userDetail.bookings || []);
       setTransactions(userDetail.transactions || []);
       setCoupons(couponsData.data || []);
+      setUserPackages(userDetail.user_packages || []);
     } catch {
       toast.error('Failed to load user data');
     }
@@ -243,6 +291,7 @@ export default function UserDetailPage() {
       toast.success(action.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) + ' successful');
       const fresh = await adminFetch('user-detail', { userId });
       setProfile(fresh.profile);
+      setUserPackages(fresh.user_packages || []);
     } catch { toast.error('Action failed'); }
     setActionLoading(null);
   };
@@ -587,11 +636,22 @@ export default function UserDetailPage() {
         </div>
 
         <div>
-          <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2 px-1">
-            <Calendar className="w-4 h-4 text-blue-600" />
-            Booking History
-            <span className="text-xs font-normal text-gray-400">({bookings.length})</span>
-          </h3>
+          <div className="flex items-center justify-between mb-3 px-1">
+            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-blue-600" />
+              Booking History
+              <span className="text-xs font-normal text-gray-400">({bookings.length})</span>
+            </h3>
+            <button
+              onClick={() => {
+                setCreateBookingForm({ serviceName: '', date: '', time: '', vehicleType: '', amount: '' });
+                setShowCreateBookingModal(true);
+              }}
+              className="px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-200 flex items-center gap-1 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" /> Add Booking
+            </button>
+          </div>
           {bookings.length === 0 ? (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
               <Calendar className="w-8 h-8 text-gray-300 mx-auto mb-2" />
@@ -695,6 +755,102 @@ export default function UserDetailPage() {
           )}
         </div>
 
+
+        {/* Package as PackageIcons Section */}
+        <div className="mt-8 mb-8">
+          <div className="flex items-center justify-between mb-3 px-1">
+            <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+              <PackageIcon className="w-4 h-4 text-orange-600" />
+              Active Packages
+              <span className="text-xs font-normal text-gray-400">({(userPackages || []).length})</span>
+            </h3>
+          </div>
+          {(userPackages || []).length === 0 ? (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
+              <PackageIcon className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+              <p className="text-sm text-gray-400">No active packages</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {(userPackages || []).map((pkg: any) => (
+                <div key={pkg.id} className="bg-white rounded-2xl shadow-sm border border-orange-100 overflow-hidden">
+                  <div className="p-4 bg-orange-50/50 border-b border-orange-100 flex items-center justify-between">
+                    <div>
+                       <h4 className="font-bold text-gray-900 text-sm">{pkg.packages?.name || 'Package'}</h4>
+                       <p className="text-xs text-orange-600 font-bold capitalize">{pkg.status}</p>
+                    </div>
+                  </div>
+                  <div className="p-4 space-y-3">
+                    {Object.entries(getNormalizedAllowances(pkg.remaining_allowances, pkg.packages?.service_allowances)).map(([serviceId, count]: [string, any]) => {
+                      const svc = appServices.find((s: any) => s.id === serviceId);
+                      return (
+                        <div key={serviceId} className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-700">{svc ? svc.name : serviceId}</span>
+                          <div className="flex items-center gap-3">
+                            <button
+                              onClick={async () => {
+                                const currentAllowances = getNormalizedAllowances(pkg.remaining_allowances, pkg.packages?.service_allowances);
+                                const newAllowances = { ...currentAllowances, [serviceId]: Math.max(0, count - 1) };
+                                try {
+                                  await adminAction({ action: 'update-user-package', packageId: pkg.id, remaining_allowances: newAllowances });
+                                  fetchAll();
+                                } catch (e: any) { toast.error(e.message); }
+                              }}
+                              className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200"
+                            >-</button>
+                            <span className="text-sm font-bold text-gray-900 w-4 text-center">{count as number}</span>
+                            <button
+                              onClick={async () => {
+                                const currentAllowances = getNormalizedAllowances(pkg.remaining_allowances, pkg.packages?.service_allowances);
+                                const newAllowances = { ...currentAllowances, [serviceId]: count + 1 };
+                                try {
+                                  await adminAction({ action: 'update-user-package', packageId: pkg.id, remaining_allowances: newAllowances });
+                                  fetchAll();
+                                } catch (e: any) { toast.error(e.message); }
+                              }}
+                              className="w-6 h-6 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 hover:bg-orange-200"
+                            >+</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    <div className="pt-3 mt-3 border-t border-orange-100/50 flex gap-2">
+                       <select
+                         id={`add-svc-${pkg.id}`}
+                         className="flex-1 text-sm rounded-lg border-gray-200 py-1.5 px-2 bg-gray-50 focus:border-orange-500 outline-none"
+                       >
+                         <option value="">Add service...</option>
+                         {appServices.filter(s => !(getNormalizedAllowances(pkg.remaining_allowances, pkg.packages?.service_allowances))[s.id]).map(s => (
+                           <option key={s.id} value={s.id}>{s.name}</option>
+                         ))}
+                       </select>
+                       <button
+                         onClick={async () => {
+                           const selectEl = document.getElementById(`add-svc-${pkg.id}`) as HTMLSelectElement;
+                           const svcId = selectEl?.value;
+                           if (!svcId) return toast.error('Select a service first');
+
+                           const currentAllowances = getNormalizedAllowances(pkg.remaining_allowances, pkg.packages?.service_allowances);
+                           const newAllowances = { ...currentAllowances, [svcId]: 1 };
+                           try {
+                             await adminAction({ action: 'update-user-package', packageId: pkg.id, remaining_allowances: newAllowances });
+                             selectEl.value = '';
+                             fetchAll();
+                           } catch (e: any) { toast.error(e.message); }
+                         }}
+                         className="px-3 py-1.5 bg-orange-100 text-orange-700 text-xs font-bold rounded-lg hover:bg-orange-200 whitespace-nowrap"
+                       >
+                         Add
+                       </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div>
           <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2 px-1">
             <Clock className="w-4 h-4 text-green-600" />
@@ -753,6 +909,103 @@ export default function UserDetailPage() {
                   className="w-full py-3 bg-gray-100 text-gray-700 rounded-xl text-sm font-bold hover:bg-gray-200 transition-colors"
                 >
                   Cancel
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showCreateBookingModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/50 z-50 flex flex-col justify-end sm:items-center sm:justify-center" onClick={() => setShowCreateBookingModal(false)}>
+            <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-900">Create Booking</h3>
+                <button onClick={() => setShowCreateBookingModal(false)} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200"><X className="w-5 h-5 text-gray-600" /></button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Service Name</label>
+                  <input type="text" value={createBookingForm.serviceName} onChange={(e) => setCreateBookingForm({ ...createBookingForm, serviceName: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-primary" placeholder="e.g. Car Wash" />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Vehicle Type</label>
+                  <select value={createBookingForm.vehicleType} onChange={(e) => setCreateBookingForm({ ...createBookingForm, vehicleType: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-primary appearance-none">
+                    <option value="">Select type</option>
+                    <option value="Sedan">Sedan</option>
+                    <option value="Hatchback">Hatchback</option>
+                    <option value="SUV">SUV</option>
+                    <option value="Luxury">Luxury</option>
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Date</label>
+                    <input type="date" value={createBookingForm.date} onChange={(e) => setCreateBookingForm({ ...createBookingForm, date: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-primary" />
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Time</label>
+                    <input type="time" value={createBookingForm.time} onChange={(e) => setCreateBookingForm({ ...createBookingForm, time: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-primary" />
+                  </div>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase mb-1.5 block">Amount (₹)</label>
+                  <input type="number" value={createBookingForm.amount} onChange={(e) => setCreateBookingForm({ ...createBookingForm, amount: e.target.value })} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-50 text-sm outline-none focus:border-primary" placeholder="0 for quote" />
+                </div>
+
+                <button
+                  onClick={async () => {
+                    const { serviceName, date, time, vehicleType, amount } = createBookingForm;
+                    if (!serviceName || !date || !time || !vehicleType) {
+                      return toast.error('Please fill required fields');
+                    }
+
+                    setCreatingBooking(true);
+
+                    // Format: HH:mm am/pm
+                    const [hours, minutes] = time.split(':');
+                    const h = parseInt(hours);
+                    const ampm = h >= 12 ? 'pm' : 'am';
+                    const h12 = h % 12 || 12;
+                    const formattedTime = `${h12.toString().padStart(2, '0')}:${minutes} ${ampm}`;
+                    const formattedDateTime = `${date} ${formattedTime}`;
+
+                    try {
+                      await adminAction({
+                        action: 'create-booking',
+                        bookingData: {
+                          user_id: profile.id,
+                          user_name: profile.full_name,
+                          user_phone: profile.phone,
+                          user_email: profile.email,
+                          service_name: serviceName,
+                          vehicle_type: vehicleType,
+                          booking_date: new Date(date).toISOString(),
+                          preferred_date_time: formattedDateTime,
+                          total_amount: Number(amount) || 0,
+                          status: 'Confirmed',
+                          payment_status: 'unpaid',
+                          payment_method: 'pay_at_garage',
+                          created_at: new Date().toISOString(),
+                          address: profile.location_address || profile.city || 'At Garage',
+                          service_mode: 'Garage Service'
+                        }
+                      });
+                      toast.success('Booking created successfully');
+                      setShowCreateBookingModal(false);
+                      fetchAll();
+                    } catch (e: any) {
+                      toast.error(e.message || 'Failed to create booking');
+                    }
+                    setCreatingBooking(false);
+                  }}
+                  disabled={creatingBooking}
+                  className="w-full py-4 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition-colors disabled:opacity-60 flex items-center justify-center gap-2 mt-2"
+                >
+                  {creatingBooking && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {creatingBooking ? 'Creating...' : 'Create Booking'}
                 </button>
               </div>
             </motion.div>
